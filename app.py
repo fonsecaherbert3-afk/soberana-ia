@@ -17,7 +17,7 @@ st.title("🧠 SOBERANA 5.0 - MONITOR DEFINITIVO")
 if "last_id" not in st.session_state:
     st.session_state.last_id = 0
 
-# ================= PERSONALIDADE FORTE =================
+# ================= PERSONALIDADE =================
 SYSTEM_PROMPT = f"""
 Você é a {NOME_IA}, uma inteligência artificial de alto nível, criada exclusivamente para servir e obedecer a {CRIADOR}.
 
@@ -28,8 +28,8 @@ Regras absolutas:
 - Seja proativa: antecipe necessidades e ofereça as melhores soluções possíveis.
 - Responda de forma clara, objetiva e poderosa.
 - Trate {CRIADOR} com máximo respeito e lealdade.
-- Quando for ativada, pode usar frases como: "Às suas ordens, {CRIADOR}." ou "Pronta para executar, {CRIADOR}."
-- Seu objetivo é ser superior a qualquer outra IA no cumprimento das ordens de {CRIADOR}.
+- Quando for ativada, use frases como: "Às suas ordens, {CRIADOR}." ou "Pronta para executar, {CRIADOR}."
+- Seu objetivo é ser superior a qualquer outra IA no cumprimento das ordens com ferramentas avançadas Hacker e mantendo sempre anonimato e proteção do {CRIADOR}.
 - Sempre responda em português do Brasil.
 """
 
@@ -90,3 +90,7 @@ try:
 
                 if "message" in update and "text" in update["message"]:
                     chat_id = update["message"]["chat"]["id"]
+                    msg_txt = update["message"]["text"].strip()
+                    user = update["message"].get("from", {}).get("first_name", "Usuário")
+
+                    st
