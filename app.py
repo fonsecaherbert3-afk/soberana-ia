@@ -3,13 +3,13 @@ import requests
 import time
 
 # ====================================================
-# PROJETO SOBERANA 5.0 - MOTOR COM LIMPEZA DE FORMATO
+# PROJETO SOBERANA 5.0 - MONITOR TOTAL DE ERROS
 # ====================================================
 
 NOME_IA = "Soberana"
 CRIADOR = "Francisco Herbert Walons Fonseca de Araújo"
 
-# Captura e remove cirurgicamente qualquer quebra de linha ou espaço invisível (.strip())
+# Limpeza automática absoluta de strings
 API_KEY_GEMINI = str(st.secrets.get("GEMINI_API_KEY", "")).strip()
 TELEGRAM_TOKEN = str(st.secrets.get("TELEGRAM_TOKEN", "")).strip()
 
@@ -19,8 +19,13 @@ DIRETRIZ_SISTEMA = (
     f"Responda sempre com profundo respeito, clareza e fidelidade absoluta aos interesses dele."
 )
 
+st.title(f"🧠 {NOME_IA.upper()} 5.0 - MONITOR")
+
+# Criando espaço para depuração na tela do Streamlit
+status_box = st.empty()
+error_box = st.empty()
+
 def gerar_resposta_gemini(texto_mensagem):
-    """Envia requisição direta tratando o erro de caractere invisível"""
     url = f"https://googleapis.com{API_KEY_GEMINI}"
     headers = {"Content-Type": "application/json"}
     payload = {
@@ -31,51 +36,59 @@ def gerar_resposta_gemini(texto_mensagem):
         response = requests.post(url, headers=headers, json=payload, timeout=10)
         if response.status_code == 200:
             return response.json()["candidates"]["content"]["parts"]["text"]
-        elif response.status_code == 400:
-            return "Erro 400: O Google rejeitou o formato da chave. Verifique se copiou a chave completa sem cortar letras."
-        return f"Erro na API Google (Código {response.status_code})"
+        return f"[Erro Google {response.status_code}]"
     except Exception as e:
-        return f"Erro de conexão: {str(e)}"
+        return f"[Erro Conexão Google: {str(e)}]"
 
 def enviar_mensagem_telegram(chat_id, texto):
     url = f"https://telegram.org{TELEGRAM_TOKEN}/sendMessage"
     try:
-        requests.post(url, json={"chat_id": chat_id, "text": texto}, timeout=5)
+        res = requests.post(url, json={"chat_id": chat_id, "text": texto}, timeout=5)
+        return res.status_code
+    except:
+        return 500
+
+# Executa a limpeza preventiva de webhooks antigos
+if "cleanup" not in st.session_state:
+    try:
+        requests.get(f"https://telegram.org{TELEGRAM_TOKEN}/deleteWebhook")
+        st.session_state["cleanup"] = True
     except:
         pass
 
-def processar_mensagens_telegram():
-    if not TELEGRAM_TOKEN:
-        return
-        
-    if "last_update_id" not in st.session_state:
-        st.session_state["last_update_id"] = 0
-        
+if "last_id" not in st.session_state:
+    st.session_state["last_id"] = 0
+
+status_box.success("🤖 Buscando novas mensagens no Telegram de forma contínua...")
+
+# Executa uma busca por novas mensagens
+if TELEGRAM_TOKEN:
     url_updates = f"https://telegram.org{TELEGRAM_TOKEN}/getUpdates"
     try:
-        response = requests.get(url_updates, params={"offset": st.session_state["last_update_id"] + 1, "timeout": 1}, timeout=3)
+        response = requests.get(url_updates, params={"offset": st.session_state["last_id"] + 1, "timeout": 1}, timeout=3)
         if response.status_code == 200:
             updates = response.json().get("result", [])
             for update in updates:
-                st.session_state["last_update_id"] = update["update_id"]
+                st.session_state["last_id"] = update["update_id"]
                 if "message" in update and "text" in update["message"]:
                     chat_id = update["message"]["chat"]["id"]
                     texto_usuario = update["message"]["text"]
                     
-                    # Envio local de confirmação instantânea
-                    if texto_usuario.lower().strip() in ["/start", "oi", "olá"]:
-                        enviar_mensagem_telegram(chat_id, f"Olá, meu mestre {CRIADOR}! Comando recebido. Acionando conexão purificada com o Gemini...")
+                    error_box.info(f"📥 Mensagem recebida de Francisco! Conteúdo: '{texto_usuario}'")
                     
+                    # Gera resposta e envia
                     resposta_final = gerar_resposta_gemini(texto_usuario)
-                    enviar_mensagem_telegram(chat_id, resposta_final)
-    except:
-        pass
+                    status_envio = enviar_mensagem_telegram(chat_id, resposta_final)
+                    
+                    if status_envio == 200:
+                        error_box.success(f"📤 Resposta enviada ao Telegram com sucesso!")
+                    else:
+                        error_box.error(f"❌ Falha ao enviar para o Telegram. Código HTTP: {status_envio}")
+        else:
+            error_box.error(f"⚠️ Erro ao conectar ao Telegram: Código {response.status_code}. Verifique o seu TOKEN nos Secrets.")
+    except Exception as e:
+        error_box.error(f"💥 Erro crítico no loop: {str(e)}")
 
-# Executa o limpador e ouvidor do Telegram
-processar_mensagens_telegram()
-
-st.title(f"🧠 {NOME_IA.upper()} 5.0 - MONITORAMENTO")
-st.success("Filtro de cabeçalho ativado. Monitorando novas mensagens no Telegram...")
-
+# Força atualização a cada 2 segundos
 time.sleep(2)
 st.rerun()
