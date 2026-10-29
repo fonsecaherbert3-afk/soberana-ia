@@ -49,13 +49,12 @@ if GEMINI_DISPONIVEL and API_KEY_GEMINI:
         f"e estruturar projetos lucrativos minerar criptor moedas ajudar ele a crescer financeiramente com total dedicação para que ele possa obter riqueza com total proteção ao seu criador tornando ele anonimo e protegendo todos seus dados inpedir que ele ou voce seja hackeados usar sob a direta aprovação dele de informações e ferramentas Hackers para que seu criador obtenha sucesso 100% protegido cuidado somente dos interesses pessoais dele e que cada informação de perigo iu de ameaça seja notificado rapidademente mantendo ele sempre seguro. "
         f"Responda sempre com profundo respeito, clareza e fidelidade absoluta aos interesses exclusivos do seu mestre."
     )
-   # Inicialização definitiva da Inteligência Artificial
-model = None
+   model = None
 modelo_ia = None
 
 if GEMINI_DISPONIVEL and API_KEY_GEMINI:
     genai.configure(api_key=API_KEY_GEMINI)
-    model = modelo_ia = genai.GenerativeModel('gemini-2.5-flash', system_instruction=config_sistema)
+    model = modelo_ia = genai.GenerativeModel('gemini-1.5-flash', system_instruction=config_sistema)
 
     
 
