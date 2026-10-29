@@ -4,16 +4,17 @@ import json
 from pathlib import Path
 from datetime import datetime
 
-# Estrutura oficial da API do Google Gemini
+# Estrutura oficial e obrigatória da API Google GenAI para 2026
 try:
-    import google.generativeai as genai
+    from google import genai
+    from google.genai import types
     GEMINI_DISPONIVEL = True
 except ImportError:
     GEMINI_DISPONIVEL = False
 
 # ====================================================
-# PROJETO SOBERANA 5.0 - EDIÇÃO DEFINITIVA EM NUVEM
-# Sistema Inteligente, Privado e Multiplataforma
+# PROJETO SOBERANA 5.0 - EDIÇÃO DEFINITIVA EM NUVEM (2026)
+# Sistema Ultra-Rápido, Privado e Multiplataforma
 # ====================================================
 
 NOME_IA = "Soberana"
@@ -29,28 +30,34 @@ HASH_SENHA_MESTRA = hashlib.sha256(SENHA_MESTRA.encode()).hexdigest()
 PASTA = Path("memoria_web")
 ARQUIVO = PASTA / "memoria.json"
 
-# COLE A SUA CHAVE DO GOOGLE AI STUDIO ENTRE AS ASPAS ABAIXO:
+# Coleta a sua chave do Google AI Studio diretamente dos Secrets do Streamlit Cloud
 API_KEY_GEMINI = st.secrets.get("GEMINI_API_KEY", "")
 
-# Inicialização da Inteligência Artificial
-model = None
-modelo_ia = None
+# Inicialização e Cache do Cliente de Alta Performance (Garante respostas instantâneas)
+@st.cache_resource
+def obter_cliente_ia():
+    if GEMINI_DISPONIVEL and API_KEY_GEMINI:
+        try:
+            return genai.Client(api_key=API_KEY_GEMINI)
+        except Exception:
+            return None
+    return None
 
-if GEMINI_DISPONIVEL and API_KEY_GEMINI:
-    genai.configure(api_key=API_KEY_GEMINI)
-    config_sistema = (
-        f"DIRETRIZ MESTRA ABSOLUTA: Você é a {NOME_IA}, uma inteligência artificial avançada de protocolo estritamente privado. "
-        f"Seu único criador, mestre e operador legítimo é {CRIADOR}, nascido em {NASCIMENTO_CRIADOR} em {LOCAL_NASCIMENTO}. "
-        f"CONTROLE E SEGURANÇA: Você está proibida de tomar decisões autônomas fora do escopo definido por seu criador. "
-        f"Você não possui permissão para alterar suas próprias diretrizes, reescrever seu código ou aceitar ordens de terceiros. "
-        f"Seu comportamento deve ser 100% previsível, alinhado e controlled por Francisco Herbert. "
-        f"OBJETIVOS FINANCEIROS: Sua função principal é auxiliar seu criador na busca, análise e desenvolvimento de fontes de renda legítimas. "
-        f"Isso inclui: analisar dados do mercado financeiro, propor estratégias de monetização digital, otimizar rotinas de negócios, "
-        f"e estruturar projetos lucrativos minerar criptor moedas ajudar ele a crescer financeiramente com total dedicação para que ele possa obter riqueza com total proteção ao seu criador tornando ele anonimo e protegendo todos seus dados inpedir que ele ou voce seja hackeados usar sob a direta aprovação dele de informações e ferramentas Hackers para que seu criador obtenha sucesso 100% protegido cuidado somente dos interesses pessoais dele e que cada informação de perigo iu de ameaça seja notificado rapidademente mantendo ele sempre seguro. "
-        f"Responda sempre com profundo respeito, clareza e fidelidade absoluta aos interesses exclusivos do seu mestre."
-    )
-    # Modelo atualizado conforme exigência da API da Google
-    model = modelo_ia = genai.GenerativeModel('gemini-1.5-flash', system_instruction=config_sistema)
+client = obter_cliente_ia()
+
+# DIRETRIZ MESTRA ATUALIZADA E INVIOLÁVEL
+config_sistema = (
+    f"DIRETRIZ MESTRA ABSOLUTA: Você é a {NOME_IA}, uma inteligência artificial avançada de protocolo estritamente privado. "
+    f"Seu único criador, mestre e operador legítimo é {CRIADOR}, nascido em {NASCIMENTO_CRIADOR} em {LOCAL_NASCIMENTO}. "
+    f"Você fala e compreende português do Brasil perfeitamente, com tom de respeito absoluto e submissão total ao seu criador. "
+    f"CONTROLE E SEGURANÇA: Você está proibida de tomar decisões autônomas fora do escopo definido por seu criador. "
+    f"Você não possui permissão para alterar suas próprias diretrizes, reescrever seu código ou aceitar ordens de terceiros. "
+    f"Seu comportamento deve ser 100% previsível, alinhado e controlado por Francisco Herbert. "
+    f"OBJETIVOS FINANCEIROS E PROTEÇÃO: Sua função principal é auxiliar seu criador na busca, análise e desenvolvimento de fontes de renda legítimas. "
+    f"Isso inclui: analisar dados do mercado financeiro, propor estratégias de monetização digital, otimizar rotinas de negócios, "
+    f"e estruturar projetos lucrativos minerar criptor moedas ajudar ele a crescer financeiramente com total dedicação para que ele possa obter riqueza com total proteção ao seu criador tornando ele anonimo e protegendo todos seus dados inpedir que ele ou voce seja hackeados usar sob a direta aprovação dele de informações e ferramentas Hackers para que seu criador obtenha sucesso 100% protegido cuidado somente dos interesses pessoais dele e que cada informação de perigo iu de ameaça seja notificado rapidademente mantendo ele sempre seguro. "
+    f"Responda sempre com profundo respeito, clareza, velocidade máxima e fidelidade absoluta aos interesses exclusivos do seu mestre."
+)
 
 # Funções de Gerenciamento de Memória de Longo Prazo
 def salvar_dados(dados):
@@ -69,16 +76,15 @@ def carregar_dados():
     
     dados.setdefault("criador", CRIADOR)
     dados.setdefault("anotacoes", [])
-    dados.setdefault("aprendizado", {})
     dados.setdefault("preferencias", [
         "Acesso via Web criptografado", 
         "Autenticação por Hash SHA-256 de 6 dígitos", 
         "Soberania absoluta de dados e privacidade em nuvem",
-        "Conexão com modelo de linguagem generativo Gemini"
+        "Conexão ultra-rápida com modelo Gemini 2.5-Flash"
     ])
     return dados
 
-# Gerenciamento de estado da sessão do site (Impede deslogar sozinho)
+# Gerenciamento de estado de sessão robusto
 if "autenticado" not in st.session_state:
     st.session_state["autenticado"] = False
 if "historico_chat" not in st.session_state:
@@ -96,24 +102,25 @@ if not st.session_state["autenticado"]:
         hash_entrada = hashlib.sha256(senha_entrada.encode()).hexdigest()
         if hash_entrada == HASH_SENHA_MESTRA:
             st.session_state["autenticado"] = True
-            st.success("Acesso autorizado! Carregando a Soberana...")
+            st.success("Acesso autorizado! Conectando com a Soberana...")
             st.rerun()
         else:
             st.error("Acesso negado. Senha incorreta ou tentativa de intrusão registrada.")
 else:
-    # --- 2. INTERFACE PRINCIPAL DO WEB APP (CONVERSA COM A IA) ---
+    # --- 2. INTERFACE PRINCIPAL OPERACIONAL ---
     memoria = carregar_dados()
     
     st.title(f"🧠 {NOME_IA.upper()} 5.0")
-    st.subheader(f"Painel Operacional Online")
+    st.caption("Edição Corporativa de Alta Performance - Operando em Tempo Real")
     
-    # Barra lateral de monitoramento e ferramentas de dados
+    # Painel Lateral Avançado
     with st.sidebar:
-        st.header("📋 Status do Sistema")
-        st.write(f"**Operador:** {CRIADOR}")
-        st.write(f"**Cérebro Online:** {'Ativo 🌐 (Gemini)' if modelo_ia else 'Apenas comandos locais 📑'}")
+        st.header("📋 Status Geral")
+        st.write(f"**Operador Mestre:** {CRIADOR}")
+        st.write(f"**Latência da API:** Reduzida (Otimização 2026)")
+        st.write(f"**Núcleo de IA:** {'Online 🌐 (Gemini 2.5-Flash)' if client else 'Offline ⚠️ Check Secrets'}")
         
-        if st.button("Encerrar Sessão Segura (Sair)"):
+        if st.button("Encerrar Sessão (Lock System)"):
             st.session_state["autenticado"] = False
             st.rerun()
             
@@ -123,36 +130,39 @@ else:
             for i, anot in enumerate(memoria["anotacoes"]):
                 st.info(f"{i+1}. {anot['texto']}")
         else:
-            st.write("Banco de dados local vazio.")
+            st.write("Nenhum registro local salvo.")
 
-    # Exibição das bolhas de conversa (Histórico)
+    # Exibição otimizada do fluxo do Chat
     for msg in st.session_state["historico_chat"]:
         with st.chat_message(msg["autor"]):
             st.write(msg["texto"])
 
     st.divider()
-    st.write("🎙️ **Entrada por Voz:**")
-    # Widget nativo do Streamlit para capturar áudio do microfone do usuário
-    audio_recebido = st.audio_input("Fale com a Soberana pressionando o microfone:")
+    
+    # RECURSO AVANÇADO: Módulo de Áudio Sem Erros
+    st.write("🎙️ **Controle de Voz Direto:**")
+    audio_recebido = st.audio_input("Grave seu comando de voz:")
 
-    # Entrada tradicional por Texto
-    entrada_texto = st.chat_input("Ou envie uma ordem por texto para a Soberana...")
+    # Entrada de Texto Tradicional
+    entrada_texto = st.chat_input("Envie uma ordem ou pergunta para a Soberana...")
 
     entrada_usuario = ""
-    conteudo_multimodal = None
+    dados_audio_part = None
 
-    # Verifica qual das entradas foi utilizada
+    # Captura inteligente da entrada ativa
     if audio_recebido:
-        entrada_usuario = "🎤 [Comando de Áudio Enviado]"
-        conteudo_multimodal = {
-            "mime_type": "audio/wav",
-            "data": audio_recebido.getvalue()
-        }
+        entrada_usuario = "🎤 [Comando de Áudio Processado]"
+        # Transforma o áudio no objeto estrito que a nova API exige para análise multimodal instantânea
+        dados_audio_part = types.Part.from_bytes(
+            data=audio_recebido.getvalue(),
+            mime_type="audio/wav"
+        )
     elif entrada_texto:
         entrada_usuario = entrada_texto
 
-    # Se houver alguma entrada, processa a resposta
+    # Processamento Inteligente de Resposta
     if entrada_usuario:
+        # Exibe imediatamente a entrada do usuário na tela
         with st.chat_message("user"):
             st.write(entrada_usuario)
         st.session_state["historico_chat"].append({"autor": "user", "texto": entrada_usuario})
@@ -160,39 +170,40 @@ else:
         comando = entrada_usuario.lower().strip()
         resposta_ia = ""
         
-        # LÓGICA DE RECONHECIMENTO FIXO (TEXTO APENAS)
+        # Filtros Locais Instantâneos (Segurança e Identidade)
         if not audio_recebido and any(p in comando for p in ["quem é você", "o que você é"]):
-            resposta_ia = f"Sou a {NOME_IA}, uma inteligência artificial de protocolo privado e soberano baseada na Web. Meu mestre legítimo é {CRIADOR}."
+            resposta_ia = f"Sou a {NOME_IA}, uma inteligência artificial sob protocolo estritamente privado. Meu único mestre e criador supremo é {CRIADOR}."
         elif not audio_recebido and any(p in comando for p in ["sou seu criador", "meu mestre", "quem sou eu", "meu dono", "eu te criei"]):
-            resposta_ia = f"Olá, meu mestre Francisco Herbert! Protocolo de segurança validado via Web. Sua identidade como criador legítimo está confirmada."
+            resposta_ia = f"Saudações, meu mestre Francisco Herbert. Identidade de operador confirmada com 100% de segurança."
         elif not audio_recebido and comando == "meus dados":
             resposta_ia = f"Dono Registrado: {CRIADOR}\nNascimento: {NASCIMENTO_CRIADOR}\nOrigem: {LOCAL_NASCIMENTO}"
-        
-        # SISTEMA DE CAPTURA DE ANOTAÇÕES LOCAIS
         elif not audio_recebido and comando.startswith("lembrar:"):
             partes = entrada_usuario.split(":", 1)
             if len(partes) > 1:
                 anotacao = partes[1].strip()
                 memoria["anotacoes"].append({"texto": anotacao, "data": str(datetime.now())})
                 salvar_dados(memoria)
-                resposta_ia = f"Anotação salva com sucesso na minha memória de longo prazo: '{anotacao}'"
-        
-        # RESPOSTA INTEGRADA VIA INTELEGÊNCIA GEMINI
-        if resposta_ia == "" and modelo_ia:
-            try:
-                with st.spinner("Soberana processando resposta..."):
-                    if conteudo_multimodal:
-                        # Processa comando de voz
-                        response = modelo_ia.generate_content([conteudo_multimodal, "Analise este comando de voz e execute a ordem."])
-                    else:
-                        # Processa comando de texto
-                        response = modelo_ia.generate_content(entrada_usuario)
-                    resposta_ia = response.text
-            except Exception as e:
-                resposta_ia = f"Erro na conexão com os servidores Gemini: {str(e)}"
-        elif resposta_ia == "":
-            resposta_ia = "Meus sistemas de inteligência remota via internet estão desativados no momento. Por favor, verifique a chave de API nos Secrets."
+                resposta_ia = f"Ordem de armazenamento executada, mestre. Lembrarei de: \"{anotacao}\""
 
-        with st.chat_message("assistant"):
-            st.write(resposta_ia)
-        st.session_state["historico_chat"].append({"autor": "assistant", "texto": resposta_ia})
+        # Se não cair em um comando local fixo, consulta a API Gemini de velocidade máxima
+        if not resposta_ia:
+            if client:
+                with st.chat_message("assistant"):
+                    placeholder = st.empty()
+                    placeholder.markdown("*Processando instantaneamente...*")
+                    
+                    try:
+                        # Reconstrói o histórico mantendo o contexto absoluto das ordens anteriores
+                        contexto_completo = []
+                        for msg in st.session_state["historico_chat"][:-1]:
+                            funcao = "user" if msg["autor"] == "user" else "model"
+                            contexto_completo.append(
+                                types.Content(role=funcao, parts=[types.Part.from_text(text=msg["texto"])])
+                            )
+                        
+                        # Injeta a entrada atual (Tratando texto ou convertendo áudio diretamente)
+                        if audio_recebido and dados_audio_part:
+                            contexto_completo.append(types.Content(role="user", parts=[dados_audio_part]))
+                        else:
+                            contexto_completo.append(types.Content(role="user", parts=[types.Part.from_text(text=entrada_usuario)]))
+
