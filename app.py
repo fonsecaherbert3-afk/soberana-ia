@@ -9,7 +9,7 @@ CRIADOR = "criador"
 TELEGRAM_TOKEN = str(st.secrets.get("TELEGRAM_TOKEN", "")).strip()
 GEMINI_API_KEY = str(st.secrets.get("GEMINI_API_KEY", "")).strip()
 
-MODELO_GEMINI = "gemini-2.0-flash"
+MODELO_GEMINI = "MODELO_GEMINI = "gemini-3.8-flash""
 
 st.set_page_config(page_title="Soberana 5.0", page_icon="🧠", layout="centered")
 st.title("🧠 SOBERANA 5.0 - MONITOR DEFINITIVO")
