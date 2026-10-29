@@ -54,7 +54,7 @@ modelo_ia = None
 
 if GEMINI_DISPONIVEL and API_KEY_GEMINI:
     genai.configure(api_key=API_KEY_GEMINI)
-model = modelo_ia = genai.GenerativeModel('gemini-1.5-flash', system_instruction=config_sistema)
+    model = genai.GenerativeModel('gemini-2.5-flash', system_instruction=config_sistema)
 
     
 
