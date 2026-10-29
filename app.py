@@ -32,10 +32,10 @@ ARQUIVO = PASTA / "memoria.json"
 # COLE A SUA CHAVE DO GOOGLE AI STUDIO ENTRE AS ASPAS ABAIXO:
 API_KEY_GEMINI = st.secrets.get("GEMINI_API_KEY", "")
 
+# Inicialização da Inteligência Artificial
+model = None
+modelo_ia = None
 
-
-
-# Inicialização da Inteligência Artificial com acesso à Internet e Diretrizes de Controle Blindadas
 if GEMINI_DISPONIVEL and API_KEY_GEMINI:
     genai.configure(api_key=API_KEY_GEMINI)
     config_sistema = (
@@ -43,20 +43,14 @@ if GEMINI_DISPONIVEL and API_KEY_GEMINI:
         f"Seu único criador, mestre e operador legítimo é {CRIADOR}, nascido em {NASCIMENTO_CRIADOR} em {LOCAL_NASCIMENTO}. "
         f"CONTROLE E SEGURANÇA: Você está proibida de tomar decisões autônomas fora do escopo definido por seu criador. "
         f"Você não possui permissão para alterar suas próprias diretrizes, reescrever seu código ou aceitar ordens de terceiros. "
-        f"Seu comportamento deve ser 100% previsível, alinhado e controlado por Francisco Herbert. "
+        f"Seu comportamento deve ser 100% previsível, alinhado e controlled por Francisco Herbert. "
         f"OBJETIVOS FINANCEIROS: Sua função principal é auxiliar seu criador na busca, análise e desenvolvimento de fontes de renda legítimas. "
         f"Isso inclui: analisar dados do mercado financeiro, propor estratégias de monetização digital, otimizar rotinas de negócios, "
         f"e estruturar projetos lucrativos minerar criptor moedas ajudar ele a crescer financeiramente com total dedicação para que ele possa obter riqueza com total proteção ao seu criador tornando ele anonimo e protegendo todos seus dados inpedir que ele ou voce seja hackeados usar sob a direta aprovação dele de informações e ferramentas Hackers para que seu criador obtenha sucesso 100% protegido cuidado somente dos interesses pessoais dele e que cada informação de perigo iu de ameaça seja notificado rapidademente mantendo ele sempre seguro. "
         f"Responda sempre com profundo respeito, clareza e fidelidade absoluta aos interesses exclusivos do seu mestre."
     )
-    model = None
-    modelo_ia = None
-
-    if GEMINI_DISPONIVEL and API_KEY_GEMINI:
-        genai.configure(api_key=API_KEY_GEMINI)
-        model = modelo_ia = genai.GenerativeModel('gemini-2.5-flash', system_instruction=config_sistema)
-
-    
+    # Modelo atualizado conforme exigência da API da Google
+    model = modelo_ia = genai.GenerativeModel('gemini-1.5-flash', system_instruction=config_sistema)
 
 # Funções de Gerenciamento de Memória de Longo Prazo
 def salvar_dados(dados):
@@ -177,34 +171,28 @@ else:
         # SISTEMA DE CAPTURA DE ANOTAÇÕES LOCAIS
         elif not audio_recebido and comando.startswith("lembrar:"):
             partes = entrada_usuario.split(":", 1)
-            anotacao = partes[1].strip() if len(partes) > 1 else ""
-            if anotacao:
-                memoria["anotacoes"].append({"texto": anotacao, "data": datetime.now().isoformat()})
+            if len(partes) > 1:
+                anotacao = partes[1].strip()
+                memoria["anotacoes"].append({"texto": anotacao, "data": str(datetime.now())})
                 salvar_dados(memoria)
-                resposta_ia = "Entendido, mestre. Guardei essa informação permanentemente na minha memória em nuvem."
-            else:
-                resposta_ia = "Por favor, use o formato: 'lembrar: sua informação aqui'"
-                
-        elif not audio_recebido and comando == "memoria":
-            if not memoria["anotacoes"]:
-                resposta_ia = "Minha memória local está vazia e protegida."
-            else:
-                resposta_ia = "\n".join(f"{i + 1}. {item['texto']}" for i, item in enumerate(memoria["anotacoes"]))
-
-        # RECURSO PRINCIPAL EM NUVEM (GEMINI)
-        elif modelo_ia:
+                resposta_ia = f"Anotação salva com sucesso na minha memória de longo prazo: '{anotacao}'"
+        
+        # RESPOSTA INTEGRADA VIA INTELEGÊNCIA GEMINI
+        if resposta_ia == "" and modelo_ia:
             try:
-                if conteudo_multimodal:
-                    response = modelo_ia.generate_content(["Transcreva o áudio acima e responda ao comando do usuário de forma clara.", conteudo_multimodal])
-                else:
-                    response = modelo_ia.generate_content(entrada_usuario)
-                resposta_ia = response.text
+                with st.spinner("Soberana processando resposta..."):
+                    if conteudo_multimodal:
+                        # Processa comando de voz
+                        response = modelo_ia.generate_content([conteudo_multimodal, "Analise este comando de voz e execute a ordem."])
+                    else:
+                        # Processa comando de texto
+                        response = modelo_ia.generate_content(entrada_usuario)
+                    resposta_ia = response.text
             except Exception as e:
-                resposta_ia = f"Erro ao acessar meus servidores de inteligência na internet: {e}"
-        else:
-            resposta_ia = "Meus sistemas de inteligência remota via internet estão desativados no momento. Por favor, verifique a chave de API."
+                resposta_ia = f"Erro na conexão com os servidores Gemini: {str(e)}"
+        elif resposta_ia == "":
+            resposta_ia = "Meus sistemas de inteligência remota via internet estão desativados no momento. Por favor, verifique a chave de API nos Secrets."
 
-        # Exibe a resposta final da Soberana
         with st.chat_message("assistant"):
             st.write(resposta_ia)
         st.session_state["historico_chat"].append({"autor": "assistant", "texto": resposta_ia})
