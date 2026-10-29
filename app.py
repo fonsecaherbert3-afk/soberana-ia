@@ -53,7 +53,6 @@ if GEMINI_DISPONIVEL and API_KEY_GEMINI:
             model_name='gemini-1.5-flash-latest',
             system_instruction=config_sistema
         )
-
 else:
     modelo_ia = None
 
