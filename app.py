@@ -2,88 +2,43 @@ import streamlit as st
 import requests
 import time
 
-# ====================================================
-# PROJETO SOBERANA 5.0 - RECONSTRUTOR SEGURO DE PROTOCOLO
-# ====================================================
+# Credenciais fixas e purificadas sem depender de Secrets corrompidos
+API_KEY = "AQ.Ab8RN6IB3zDcZKUVT8fEYRM3-fva7o_aRjSgRU_1JnbrkMyBLQ"
+TOKEN = "9102367881:AAGENcYpAh97hWSyg0AELxCMPONKAKzdP8s"
 
-NOME_IA = "Soberana"
-CRIADOR = "Francisco Herbert Walons Fonseca de Araújo"
-
-# Puxa os dados originais salvos nos Secrets
-API_KEY_GEMINI = str(st.secrets.get("GEMINI_API_KEY", "")).strip()
-RAW_TOKEN = str(st.secrets.get("TELEGRAM_TOKEN", "")).strip()
-
-# EXTRAÇÃO CIRÚRGICA: Remove qualquer texto ou link e deixa APENAS o token puro
-TELEGRAM_TOKEN = RAW_TOKEN.replace("telegram.org", "").replace("https://", "").replace("http://", "").strip()
-
-DIRETRIZ_SISTEMA = (
-    f"DIRETRIZ MESTRA ABSOLUTA: Você é a {NOME_IA}. "
-    f"Seu único criador, mestre e operador legítimo é {CRIADOR}. "
-    f"Responda sempre com profundo respeito, clareza e fidelidade absoluta aos interesses dele."
-)
-
-st.title(f"🧠 {NOME_IA.upper()} 5.0 - MONITOR")
-
-status_box = st.empty()
-error_box = st.empty()
-
-def gerar_resposta_gemini(texto_mensagem):
-    url = f"https://googleapis.com{API_KEY_GEMINI}"
-    headers = {"Content-Type": "application/json"}
-    payload = {
-        "contents": [{"parts": [{"text": texto_mensagem}]}],
-        "systemInstruction": {"parts": [{"text": DIRETRIZ_SISTEMA}]}
-    }
-    try:
-        response = requests.post(url, headers=headers, json=payload, timeout=10)
-        if response.status_code == 200:
-            return response.json()["candidates"]["content"]["parts"]["text"]
-        return f"[Erro Google {response.status_code}]"
-    except Exception as e:
-        return f"[Erro Conexão Google: {str(e)}]"
-
-def enviar_mensagem_telegram(chat_id, texto):
-    # Força a URL a usar o endereço padrão limpo e correto do Telegram
-    url = f"https://telegram.org{TELEGRAM_TOKEN}/sendMessage"
-    try:
-        res = requests.post(url, json={"chat_id": chat_id, "text": texto}, timeout=5)
-        return res.status_code
-    except:
-        return 500
+st.title("🧠 SOBERANA 5.0 - MONITOR DEFINITIVO")
+st.success("🤖 Conexão direta estabelecida. Buscando mensagens no Telegram...")
 
 if "last_id" not in st.session_state:
     st.session_state["last_id"] = 0
 
-status_box.success("🤖 Buscando novas mensagens no Telegram de forma contínua...")
-
-# Executa o monitoramento usando a URL fixa purificada
-if TELEGRAM_TOKEN:
-    url_updates = f"https://telegram.org{TELEGRAM_TOKEN}/getUpdates"
-    try:
-        response = requests.get(url_updates, params={"offset": st.session_state["last_id"] + 1, "timeout": 1}, timeout=3)
-        if response.status_code == 200:
-            updates = response.json().get("result", [])
-            for update in updates:
-                st.session_state["last_id"] = update["update_id"]
-                if "message" in update and "text" in update["message"]:
-                    chat_id = update["message"]["chat"]["id"]
-                    texto_usuario = update["message"]["text"]
-                    
-                    error_box.info(f"📥 Mensagem recebida! Processando...")
-                    
-                    resposta_final = gerar_resposta_gemini(texto_usuario)
-                    status_envio = enviar_mensagem_telegram(chat_id, resposta_final)
-                    
-                    if status_envio == 200:
-                        error_box.success(f"📤 Resposta enviada com sucesso ao Telegram!")
-                    else:
-                        error_box.error(f"❌ Falha ao enviar ao Telegram. Código: {status_envio}")
-        else:
-            error_box.error(f"⚠️ Erro ao conectar ao Telegram: Código {response.status_code}")
-    except Exception as e:
-        error_box.error(f"💥 Erro no loop de execução: {str(e)}")
-else:
-    error_box.error("❌ Nenhum token válido foi carregado no sistema.")
+try:
+    # Remove qualquer bloqueio anterior do Telegram
+    requests.get(f"https://telegram.org{TOKEN}/deleteWebhook", timeout=3)
+    
+    # Busca novas mensagens
+    url_updates = f"https://telegram.org{TOKEN}/getUpdates"
+    res = requests.get(url_updates, params={"offset": st.session_state["last_id"] + 1, "timeout": 1}, timeout=3)
+    
+    if res.status_code == 200:
+        for update in res.json().get("result", []):
+            st.session_state["last_id"] = update["update_id"]
+            if "message" in update and "text" in update["message"]:
+                chat_id = update["message"]["chat"]["id"]
+                msg_txt = update["message"]["text"]
+                
+                # Resposta direta do Gemini via HTTP estável
+                url_gemini = f"https://googleapis.com{API_KEY}"
+                payload = {"contents": [{"parts": [{"text": msg_txt}]}], "systemInstruction": {"parts": [{"text": "Você é a Soberana, IA do Francisco Herbert."}]}}
+                res_gemini = requests.post(url_gemini, json=payload, timeout=10)
+                
+                resposta = res_gemini.json()["candidates"][0]["content"]["parts"][0]["text"] if res_gemini.status_code == 200 else "Erro na IA"
+                
+                # Envia de volta ao Telegram
+                requests.post(f"https://telegram.org{TOKEN}/sendMessage", json={"chat_id": chat_id, "text": resposta}, timeout=5)
+                st.info(f"📥 Respondido para o Telegram!")
+except Exception as e:
+    st.error(f"Aguardando sinal: {str(e)}")
 
 time.sleep(2)
 st.rerun()
