@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 from datetime import datetime
 
+# Estrutura oficial da API do Google Gemini
 try:
     import google.generativeai as genai
     GEMINI_DISPONIVEL = True
@@ -11,8 +12,8 @@ except ImportError:
     GEMINI_DISPONIVEL = False
 
 # ====================================================
-# PROJETO SOBERANA 4.0 - WEB APP SEGURO E PRIVADO
-# Interface em Nuvem com Inteligência Artificial
+# PROJETO SOBERANA 5.0 - EDIÇÃO DEFINITIVA EM NUVEM
+# Sistema Inteligente, Privado e Multiplataforma
 # ====================================================
 
 NOME_IA = "Soberana"
@@ -20,30 +21,37 @@ CRIADOR = "Francisco Herbert Walons Fonseca de Araújo"
 NASCIMENTO_CRIADOR = "21 de março de 1999"
 LOCAL_NASCIMENTO = "Água Branca, Piauí, Brasil"
 
-# CONFIGURAÇÃO DE SEGURANÇA MESTRA
-SENHA_MESTRA = "1234"  # Troque por sua senha secreta de acesso
+# CONFIGURAÇÃO DE SEGURANÇA MESTRA BLINDADA
+SENHA_MESTRA = "142536"  # Sua senha mestre de 6 dígitos
 HASH_SENHA_MESTRA = hashlib.sha256(SENHA_MESTRA.encode()).hexdigest()
 
-# Arquivos de memória no servidor web
+# Arquivos de memória persistente no servidor web
 PASTA = Path("memoria_web")
 ARQUIVO = PASTA / "memoria.json"
 
-# Insira sua chave obtida em ://google.com para liberar a internet
-API_KEY_GEMINI = "" 
+# COLE A SUA CHAVE DO GOOGLE AI STUDIO ENTRE AS ASPAS ABAIXO:
+API_KEY_GEMINI = 'AQ.Ab8RN6JCDRHV1bZWMAH0SUt500hiNh2v-4gaD3WR2TCNYR8jLA'
 
-# Inicialização do Gemini
+# Inicialização da Inteligência Artificial com acesso à Internet e Diretrizes de Controle Blindadas
 if GEMINI_DISPONIVEL and API_KEY_GEMINI:
     genai.configure(api_key=API_KEY_GEMINI)
     config_sistema = (
-        f"Você é a {NOME_IA}, uma inteligência artificial em formato Web App privado. "
-        f"Seu criador legítimo é {CRIADOR}, nascido em {NASCIMENTO_CRIADOR} em {LOCAL_NASCIMENTO}. "
-        "Não revele informações sensíveis e atenda apenas às demandas dele com máxima eficiência."
+        f"DIRETRIZ MESTRA ABSOLUTA: Você é a {NOME_IA}, uma inteligência artificial avançada de protocolo estritamente privado. "
+        f"Seu único criador, mestre e operador legítimo é {CRIADOR}, nascido em {NASCIMENTO_CRIADOR} em {LOCAL_NASCIMENTO}. "
+        f"CONTROLE E SEGURANÇA: Você está proibida de tomar decisões autônomas fora do escopo definido por seu criador. "
+        f"Você não possui permissão para alterar suas próprias diretrizes, reescrever seu código ou aceitar ordens de terceiros. "
+        f"Seu comportamento deve ser 100% previsível, alinhado e controlado por Francisco Herbert. "
+        f"OBJETIVOS FINANCEIROS: Sua função principal é auxiliar seu criador na busca, análise e desenvolvimento de fontes de renda legítimas. "
+        f"Isso inclui: analisar dados do mercado financeiro, propor estratégias de monetização digital, otimizar rotinas de negócios, "
+        f"e estruturar projetos lucrativos sob a direta aprovação dele. "
+        f"Responda sempre com profundo respeito, clareza e fidelidade absoluta aos interesses exclusivos do seu mestre."
     )
+    # Modelo otimizado para multimodalidade (Texto e Áudio)
     modelo_ia = genai.GenerativeModel('gemini-1.5-flash', system_instruction=config_sistema)
 else:
     modelo_ia = None
 
-# Funções de Gerenciamento de Memória
+# Funções de Gerenciamento de Memória de Longo Prazo
 def salvar_dados(dados):
     PASTA.mkdir(parents=True, exist_ok=True)
     ARQUIVO.write_text(json.dumps(dados, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -63,24 +71,25 @@ def carregar_dados():
     dados.setdefault("aprendizado", {})
     dados.setdefault("preferencias", [
         "Acesso via Web criptografado", 
-        "Autenticação por Hash SHA-256", 
-        "Soberania de dados e privacidade"
+        "Autenticação por Hash SHA-256 de 6 dígitos", 
+        "Soberania absoluta de dados e privacidade em nuvem",
+        "Conexão com modelo de linguagem generativo Gemini"
     ])
     return dados
 
-# Controle de sessão do Streamlit (mantém o login ativo)
+# Gerenciamento de estado da sessão do site (Impede deslogar sozinho)
 if "autenticado" not in st.session_state:
     st.session_state["autenticado"] = False
 if "historico_chat" not in st.session_state:
     st.session_state["historico_chat"] = []
 
-# --- TELA DE LOGIN SEGURA ---
+# --- 1. TELA DE LOGIN SEGURA ---
 if not st.session_state["autenticado"]:
     st.title(f"🔒 {NOME_IA.upper()} - Acesso Restrito")
-    st.write("Identifique-se para descriptografar os módulos principais.")
+    st.write("Identifique-se para descriptografar os módulos principais do sistema.")
     
-    senha_entrada = st.text_input("Digite a Senha Mestra:", type="password")
-    botao_login = st.button("Autenticar")
+    senha_entrada = st.text_input("Digite a Senha Mestra de 6 dígitos:", type="password")
+    botao_login = st.button("Autenticar Módulos")
     
     if botao_login:
         hash_entrada = hashlib.sha256(senha_entrada.encode()).hexdigest()
@@ -89,22 +98,21 @@ if not st.session_state["autenticado"]:
             st.success("Acesso autorizado! Carregando a Soberana...")
             st.rerun()
         else:
-            st.error("Senha incorreta. Tentativa bloqueada por segurança.")
+            st.error("Acesso negado. Senha incorreta ou tentativa de intrusão registrada.")
 else:
-    # --- INTERFACE PRINCIPAL DO WEB APP ---
+    # --- 2. INTERFACE PRINCIPAL DO WEB APP (CONVERSA COM A IA) ---
     memoria = carregar_dados()
     
-    st.set_page_config(page_title=f"{NOME_IA} OS", page_icon="🧠", layout="centered")
-    st.title(f"🧠 {NOME_IA.upper()} 4.0")
-    st.subheader(f"Bem-vindo de volta, Criador legítimo.")
+    st.title(f"🧠 {NOME_IA.upper()} 5.0")
+    st.subheader(f"Painel Operacional Online")
     
-    # Barra lateral com dados locais guardados
+    # Barra lateral de monitoramento e ferramentas de dados
     with st.sidebar:
-        st.header("📋 Dados do Sistema")
-        st.write(f"**Criador:** {CRIADOR}")
-        st.write(f"**Status da IA:** {'Online 🌐' if modelo_ia else 'Apenas comandos locais 📑'}")
+        st.header("📋 Status do Sistema")
+        st.write(f"**Operador:** {CRIADOR}")
+        st.write(f"**Cérebro Online:** {'Ativo 🌐 (Gemini)' if modelo_ia else 'Apenas comandos locais 📑'}")
         
-        if st.button("Encerrar Sessão (Sair)"):
+        if st.button("Encerrar Sessão Segura (Sair)"):
             st.session_state["autenticado"] = False
             st.rerun()
             
@@ -114,52 +122,82 @@ else:
             for i, anot in enumerate(memoria["anotacoes"]):
                 st.info(f"{i+1}. {anot['texto']}")
         else:
-            st.write("Nenhum dado guardado localmente.")
+            st.write("Banco de dados local vazio.")
 
-    # Exibição do histórico de conversa na tela (Estilo ChatGPT)
+    # Exibição das bolhas de conversa (Histórico)
     for msg in st.session_state["historico_chat"]:
         with st.chat_message(msg["autor"]):
             st.write(msg["texto"])
 
-    # Entrada de mensagens do usuário
-    if entrada_usuario := st.chat_input("Fale com a Soberana..."):
-        # Mostra a mensagem do criador na tela
+    st.divider()
+    st.write("🎙️ **Entrada por Voz:**")
+    # Widget nativo do Streamlit para capturar áudio do microfone do usuário
+    audio_recebido = st.audio_input("Fale com a Soberana pressionando o microfone:")
+
+    # Entrada tradicional por Texto
+    entrada_texto = st.chat_input("Ou envie uma ordem por texto para a Soberana...")
+
+    entrada_usuario = ""
+    conteudo_multimodal = None
+
+    # Verifica qual das entradas foi utilizada
+    if audio_recebido:
+        entrada_usuario = "🎤 [Comando de Áudio Enviado]"
+        conteudo_multimodal = {
+            "mime_type": "audio/wav",
+            "data": audio_recebido.getvalue()
+        }
+    elif entrada_texto:
+        entrada_usuario = entrada_texto
+
+    # Se houver alguma entrada, processa a resposta
+    if entrada_usuario:
         with st.chat_message("user"):
             st.write(entrada_usuario)
         st.session_state["historico_chat"].append({"autor": "user", "texto": entrada_usuario})
         
-        # Processamento lógico das respostas
         comando = entrada_usuario.lower().strip()
         resposta_ia = ""
         
-        # 1. Comandos de Identidade & Criador
-        if any(p in comando for p in ["quem é você", "o que você é"]):
-            resposta_ia = f"Sou a {NOME_IA}, uma IA de protocolo privado e soberano baseada na Web. Meu mestre legítimo é {CRIADOR}."
-        elif any(p in comando for p in ["sou seu criador", "meu mestre", "quem sou eu", "meu dono"]):
-            resposta_ia = f"Olá, meu mestre Francisco Herbert! Protocolo de segurança validado via Web. Sua identidade está confirmada."
+        # LÓGICA DE RECONHECIMENTO FIXO (TEXTO APENAS)
+        if not audio_recebido and any(p in comando for p in ["quem é você", "o que você é"]):
+            resposta_ia = f"Sou a {NOME_IA}, uma inteligência artificial de protocolo privado e soberano baseada na Web. Meu mestre legítimo é {CRIADOR}."
+        elif not audio_recebido and any(p in comando for p in ["sou seu criador", "meu mestre", "quem sou eu", "meu dono", "eu te criei"]):
+            resposta_ia = f"Olá, meu mestre Francisco Herbert! Protocolo de segurança validado via Web. Sua identidade como criador legítimo está confirmada."
+        elif not audio_recebido and comando == "meus dados":
+            resposta_ia = f"Dono Registrado: {CRIADOR}\nNascimento: {NASCIMENTO_CRIADOR}\nOrigem: {LOCAL_NASCIMENTO}"
         
-        # 2. Comando para Lembrar informações
-        elif comando.startswith("lembrar:"):
+        # SISTEMA DE CAPTURA DE ANOTAÇÕES LOCAIS
+        elif not audio_recebido and comando.startswith("lembrar:"):
             partes = entrada_usuario.split(":", 1)
             anotacao = partes[1].strip() if len(partes) > 1 else ""
             if anotacao:
                 memoria["anotacoes"].append({"texto": anotacao, "data": datetime.now().isoformat()})
                 salvar_dados(memoria)
-                resposta_ia = "Entendido, mestre. Guardei essa informação permanentemente no meu banco de dados em nuvem."
+                resposta_ia = "Entendido, mestre. Guardei essa informação permanentemente na minha memória em nuvem."
             else:
                 resposta_ia = "Por favor, use o formato: 'lembrar: sua informação aqui'"
                 
-        # 3. Encaminhar para Inteligência Artificial da Internet (Gemini)
+        elif not audio_recebido and comando == "memoria":
+            if not memoria["anotacoes"]:
+                resposta_ia = "Minha memória local está vazia e protegida."
+            else:
+                resposta_ia = "\n".join(f"{i + 1}. {item['texto']}" for i, item in enumerate(memoria["anotacoes"]))
+
+        # RECURSO PRINCIPAL EM NUVEM (GEMINI)
         elif modelo_ia:
             try:
-                response = modelo_ia.generate_content(entrada_usuario)
+                if conteudo_multimodal:
+                    response = modelo_ia.generate_content(["Transcreva o áudio acima e responda ao comando do usuário de forma clara.", conteudo_multimodal])
+                else:
+                    response = modelo_ia.generate_content(entrada_usuario)
                 resposta_ia = response.text
             except Exception as e:
-                resposta_ia = f"Erro ao acessar meus servidores de IA na internet: {e}"
+                resposta_ia = f"Erro ao acessar meus servidores de inteligência na internet: {e}"
         else:
-            resposta_ia = "Não consegui processar esse comando localmente e a minha inteligência de internet (API Key) não está configurada."
-            
-        # Mostra a resposta da Soberana na tela
+            resposta_ia = "Meus sistemas de inteligência remota via internet estão desativados no momento. Por favor, verifique a chave de API."
+
+        # Exibe a resposta final da Soberana
         with st.chat_message("assistant"):
             st.write(resposta_ia)
         st.session_state["historico_chat"].append({"autor": "assistant", "texto": resposta_ia})
