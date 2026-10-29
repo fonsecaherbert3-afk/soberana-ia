@@ -3,14 +3,15 @@ import requests
 import time
 
 # ====================================================
-# PROJETO SOBERANA 5.0 - SISTEMA AUTO-EXECUTÁVEL TELEGRAM
+# PROJETO SOBERANA 5.0 - BLINDAGEM E LIMPEZA DE CHAVES
 # ====================================================
 
 NOME_IA = "Soberana"
 CRIADOR = "Francisco Herbert Walons Fonseca de Araújo"
 
-API_KEY_GEMINI = st.secrets.get("GEMINI_API_KEY", "")
-TELEGRAM_TOKEN = st.secrets.get("TELEGRAM_TOKEN", "")
+# Puxa os dados dos Secrets limpando automaticamente qualquer espaço ou quebra de linha do celular
+API_KEY_GEMINI = str(st.secrets.get("GEMINI_API_KEY", "")).strip().replace('"', '').replace("'", "")
+TELEGRAM_TOKEN = str(st.secrets.get("TELEGRAM_TOKEN", "")).strip().replace('"', '').replace("'", "")
 
 DIRETRIZ_SISTEMA = (
     f"DIRETRIZ MESTRA ABSOLUTA: Você é a {NOME_IA}. "
@@ -19,7 +20,7 @@ DIRETRIZ_SISTEMA = (
 )
 
 def gerar_resposta_gemini(texto_mensagem):
-    """Conversa com a API do Gemini via requisição HTTP estável"""
+    """Conversa com a API do Gemini via HTTP estável"""
     url = f"https://googleapis.com{API_KEY_GEMINI}"
     headers = {"Content-Type": "application/json"}
     payload = {
@@ -35,7 +36,7 @@ def gerar_resposta_gemini(texto_mensagem):
         return f"Erro de conexão: {str(e)}"
 
 def enviar_mensagem_telegram(chat_id, texto):
-    """Envia o texto para o chat do Telegram correspondente"""
+    """Envia o texto de volta para o Telegram"""
     url = f"https://telegram.org{TELEGRAM_TOKEN}/sendMessage"
     try:
         requests.post(url, json={"chat_id": chat_id, "text": texto}, timeout=5)
@@ -43,7 +44,7 @@ def enviar_mensagem_telegram(chat_id, texto):
         pass
 
 def processar_mensagens_telegram():
-    """Busca novas mensagens recebidas e responde automaticamente"""
+    """Busca e responde as novas mensagens automaticamente"""
     if not TELEGRAM_TOKEN:
         return
         
@@ -61,11 +62,7 @@ def processar_mensagens_telegram():
                     chat_id = update["message"]["chat"]["id"]
                     texto_usuario = update["message"]["text"]
                     
-                    # Comando básico local para verificação imediata
-                    if texto_usuario.lower().strip() in ["/start", "oi", "olá"]:
-                        enviar_mensagem_telegram(chat_id, f"Olá, meu mestre {CRIADOR}! Conexão com a Soberana estabelecida. Processando resposta...")
-                    
-                    # Processa no Gemini
+                    # Processa a resposta
                     resposta_final = gerar_resposta_gemini(texto_usuario)
                     enviar_mensagem_telegram(chat_id, resposta_final)
     except:
@@ -79,14 +76,10 @@ if "webhook_removido" not in st.session_state:
     except:
         pass
 
-# Executa o sistema de checagem contínua
 processar_mensagens_telegram()
 
-# Interface do site
-st.title(f"🧠 {NOME_IA.upper()} 5.0 - MONITORAMENTO")
-st.success("O motor interno está buscando e processando as mensagens do seu Telegram automaticamente.")
-st.write("Abra o aplicativo do seu Telegram e envie uma mensagem para testar.")
+st.title(f"🧠 {NOME_IA.upper()} 5.0 - ONLINE")
+st.success("O motor de limpeza processou as chaves com sucesso. Pronto para receber mensagens.")
 
-# Atualiza a página continuamente para buscar novos chats
 time.sleep(2)
 st.rerun()
