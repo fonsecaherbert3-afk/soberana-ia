@@ -3,7 +3,7 @@ import requests
 import time
 
 # ====================================================
-# PROJETO SOBERANA 5.0 - CONEXÃO HTTP OFICIAL E CORRETA
+# PROJETO SOBERANA 5.0 - SISTEMA AUTO-EXECUTÁVEL TELEGRAM
 # ====================================================
 
 NOME_IA = "Soberana"
@@ -19,34 +19,32 @@ DIRETRIZ_SISTEMA = (
 )
 
 def gerar_resposta_gemini(texto_mensagem):
-    """Conversa direto com a API do Gemini via HTTP estruturado"""
-    # Usando o endpoint oficial padrão do gemini-1.5-flash
+    """Conversa com a API do Gemini via requisição HTTP estável"""
     url = f"https://googleapis.com{API_KEY_GEMINI}"
     headers = {"Content-Type": "application/json"}
-    
-    # Estrutura JSON exata exigida pela API do Google
     payload = {
-        "contents": [{
-            "parts": [{"text": texto_mensagem}]
-        }],
-        "systemInstruction": {
-            "parts": [{"text": DIRETRIZ_SISTEMA}]
-        }
+        "contents": [{"parts": [{"text": texto_mensagem}]}],
+        "systemInstruction": {"parts": [{"text": DIRETRIZ_SISTEMA}]}
     }
-    
     try:
         response = requests.post(url, headers=headers, json=payload, timeout=10)
         if response.status_code == 200:
-            resultado = response.json()
-            # Extrai o texto da resposta corretamente do JSON do Google
-            return resultado["candidates"][0]["content"]["parts"][0]["text"]
-        else:
-            return f"Erro na API Google (Código {response.status_code}). Verifique se a sua API Key nos Secrets está correta ou se expirou."
+            return response.json()["candidates"]["content"]["parts"]["text"]
+        return f"Erro na API Google (Código {response.status_code})"
     except Exception as e:
-        return f"Erro de conexão com o cérebro da IA: {str(e)}"
+        return f"Erro de conexão: {str(e)}"
+
+def enviar_mensagem_telegram(chat_id, texto):
+    """Envia o texto para o chat do Telegram correspondente"""
+    url = f"https://telegram.org{TELEGRAM_TOKEN}/sendMessage"
+    try:
+        requests.post(url, json={"chat_id": chat_id, "text": texto}, timeout=5)
+    except:
+        pass
 
 def processar_mensagens_telegram():
-    if not TELEGRAM_TOKEN or not API_KEY_GEMINI:
+    """Busca novas mensagens recebidas e responde automaticamente"""
+    if not TELEGRAM_TOKEN:
         return
         
     if "last_update_id" not in st.session_state:
@@ -63,25 +61,32 @@ def processar_mensagens_telegram():
                     chat_id = update["message"]["chat"]["id"]
                     texto_usuario = update["message"]["text"]
                     
-                    # Comando de teste rápido local para verificar se o Telegram está ativo
+                    # Comando básico local para verificação imediata
                     if texto_usuario.lower().strip() in ["/start", "oi", "olá"]:
-                        resposta_final = f"Olá, meu mestre {CRIADOR}! Estou ativa no Telegram e pronta para operar. Processando conexão com o Gemini..."
-                        url_envio = f"https://telegram.org{TELEGRAM_TOKEN}/sendMessage"
-                        requests.post(url_envio, json={"chat_id": chat_id, "text": resposta_final})
+                        enviar_mensagem_telegram(chat_id, f"Olá, meu mestre {CRIADOR}! Conexão com a Soberana estabelecida. Processando resposta...")
                     
-                    # Processa perguntas normais no Gemini
+                    # Processa no Gemini
                     resposta_final = gerar_resposta_gemini(texto_usuario)
-                        
-                    url_envio = f"https://telegram.org{TELEGRAM_TOKEN}/sendMessage"
-                    requests.post(url_envio, json={"chat_id": chat_id, "text": resposta_final})
+                    enviar_mensagem_telegram(chat_id, resposta_final)
     except:
         pass
 
+# Remove qualquer configuração residual de webhook para liberar o canal
+if "webhook_removido" not in st.session_state:
+    try:
+        requests.get(f"https://telegram.org{TELEGRAM_TOKEN}/deleteWebhook")
+        st.session_state["webhook_removido"] = True
+    except:
+        pass
+
+# Executa o sistema de checagem contínua
 processar_mensagens_telegram()
 
-st.title(f"🧠 {NOME_IA.upper()} 5.0 - NUVEM PRIVADA")
-st.success("O motor de escuta direta do Telegram está ativado e operando de forma contínua.")
-st.write("Abra o chat do seu robô no Telegram e envie uma mensagem de teste.")
+# Interface do site
+st.title(f"🧠 {NOME_IA.upper()} 5.0 - MONITORAMENTO")
+st.success("O motor interno está buscando e processando as mensagens do seu Telegram automaticamente.")
+st.write("Abra o aplicativo do seu Telegram e envie uma mensagem para testar.")
 
+# Atualiza a página continuamente para buscar novos chats
 time.sleep(2)
 st.rerun()
