@@ -9,12 +9,9 @@ import time
 NOME_IA = "Soberana"
 CRIADOR = "Francisco Herbert Walons Fonseca de Araújo"
 
-# Puxa os dados originais dos Secrets e limpa de forma forçada via código
-API_KEY_GEMINI = "AQ.Ab8RN6IB3zDcZKUVT8fEYRM3-fva7o_aRjSgRU_1JnbrkMyBLQ"
-
-# CORRETOR COMPORTAMENTAL: Remove qualquer link que tenha ficado preso por digitação
-RAW_TOKEN = "9102367881:AAGENcYpAh97hWSyg0AELxCMPONKAKzdP8s"
-TELEGRAM_TOKEN = RAW_TOKEN.replace("telegram.org", "").strip()
+# Puxa os dados estritamente dos Secrets de forma protegida
+API_KEY_GEMINI = str(st.secrets.get("GEMINI_API_KEY", "")).strip()
+TELEGRAM_TOKEN = str(st.secrets.get("TELEGRAM_TOKEN", "")).strip()
 
 DIRETRIZ_SISTEMA = (
     f"DIRETRIZ MESTRA ABSOLUTA: Você é a {NOME_IA}. "
@@ -62,7 +59,7 @@ if "last_id" not in st.session_state:
 
 status_box.success("🤖 Buscando novas mensagens no Telegram de forma contínua...")
 
-if TELEGRAM_TOKEN:
+if TELEGRAM_TOKEN and not TELEGRAM_TOKEN.startswith("telegram.org"):
     url_updates = f"https://telegram.org{TELEGRAM_TOKEN}/getUpdates"
     try:
         response = requests.get(url_updates, params={"offset": st.session_state["last_id"] + 1, "timeout": 1}, timeout=3)
@@ -74,19 +71,21 @@ if TELEGRAM_TOKEN:
                     chat_id = update["message"]["chat"]["id"]
                     texto_usuario = update["message"]["text"]
                     
-                    error_box.info(f"📥 Mensagem recebida! Processando...")
+                    error_box.info(f"📥 Mensagem recebida! Conteúdo: '{texto_usuario}'")
                     
                     resposta_final = gerar_resposta_gemini(texto_usuario)
                     status_envio = enviar_mensagem_telegram(chat_id, resposta_final)
                     
                     if status_envio == 200:
-                        error_box.success(f"📤 Resposta enviada com sucesso!")
+                        error_box.success(f"📤 Resposta enviada ao Telegram!")
                     else:
-                        error_box.error(f"❌ Falha ao enviar para o Telegram. Código HTTP: {status_envio}")
+                        error_box.error(f"❌ Falha ao enviar ao Telegram. Código: {status_envio}")
         else:
-            error_box.error(f"⚠️ Erro ao conectar ao Telegram: Código {response.status_code}.")
+            error_box.error(f"⚠️ Token inválido carregado nos Secrets. Código HTTP: {response.status_code}")
     except Exception as e:
-        error_box.error(f"💥 Erro crítico no loop: {str(e)}")
+        error_box.error(f"💥 Erro no loop: {str(e)}")
+else:
+    error_box.error("❌ O Token nos Secrets possui texto inválido ou está vazio.")
 
 time.sleep(2)
 st.rerun()
