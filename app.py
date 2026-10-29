@@ -2,49 +2,94 @@ import streamlit as st
 import requests
 import time
 
-# Configurações básicas
+# ====================================================
+# PROJETO SOBERANA 5.0 - SISTEMA ANTI-TRAVAMENTO
+# ====================================================
+
 NOME_IA = "Soberana"
-CRIADOR = "Francisco Herbert"
+CRIADOR = "Francisco Herbert Walons Fonseca de Araújo"
 
-# Captura e limpa o token de qualquer texto intruso automaticamente
-API_KEY = str(st.secrets.get("GEMINI_API_KEY", "")).strip()
-RAW_TOKEN = str(st.secrets.get("TELEGRAM_TOKEN", "")).strip()
-TOKEN = RAW_TOKEN.replace("telegram.org", "").strip()
+# Puxa os dados e limpa qualquer texto ou link incorreto automaticamente via código
+API_KEY_GEMINI = str(st.secrets.get("GEMINI_API_KEY", "")).strip()
+TOKEN_SUJO = str(st.secrets.get("TELEGRAM_TOKEN", "")).strip()
 
-st.title(f"🧠 {NOME_IA} 5.0 - MONITOR")
-st.success("🤖 Buscando mensagens no Telegram...")
+# Se a palavra errada estiver nos Secrets, o código apaga ela na hora antes de ligar
+TELEGRAM_TOKEN = TOKEN_SUJO.replace("telegram.org", "").strip()
 
-def inteligenca_gemini(texto):
-    url = f"https://googleapis.com{API_KEY}"
-    payload = {"contents": [{"parts": [{"text": texto}]}], "systemInstruction": {"parts": [{"text": f"Você é a {NOME_IA}, criada por {CRIADOR}."}]}}
+DIRETRIZ_SISTEMA = (
+    f"DIRETRIZ MESTRA ABSOLUTA: Você é a {NOME_IA}. "
+    f"Seu único criador, mestre e operador legítimo é {CRIADOR}. "
+    f"Responda sempre com profundo respeito, clareza e fidelidade absoluta aos interesses dele."
+)
+
+st.title(f"🧠 {NOME_IA.upper()} 5.0 - MONITOR")
+
+status_box = st.empty()
+error_box = st.empty()
+
+def gerar_resposta_gemini(texto_mensagem):
+    url = f"https://googleapis.com{API_KEY_GEMINI}"
+    headers = {"Content-Type": "application/json"}
+    payload = {
+        "contents": [{"parts": [{"text": texto_mensagem}]}],
+        "systemInstruction": {"parts": [{"text": DIRETRIZ_SISTEMA}]}
+    }
     try:
-        res = requests.post(url, json=payload, timeout=10)
-        return res.json()["candidates"]["content"]["parts"]["text"] if res.status_code == 200 else "[Erro Google]"
+        response = requests.post(url, headers=headers, json=payload, timeout=10)
+        if response.status_code == 200:
+            return response.json()["candidates"]["content"]["parts"]["text"]
+        return f"[Erro Google {response.status_code}]"
+    except Exception as e:
+        return f"[Erro Conexão Google: {str(e)}]"
+
+def enviar_mensagem_telegram(chat_id, texto):
+    url = f"https://telegram.org{TELEGRAM_TOKEN}/sendMessage"
+    try:
+        res = requests.post(url, json={"chat_id": chat_id, "text": texto}, timeout=5)
+        return res.status_code
     except:
-        return "[Erro Conexão]"
+        return 500
+
+if "cleanup" not in st.session_state:
+    try:
+        requests.get(f"https://telegram.org{TELEGRAM_TOKEN}/deleteWebhook")
+        st.session_state["cleanup"] = True
+    except:
+        pass
 
 if "last_id" not in st.session_state:
     st.session_state["last_id"] = 0
 
-if TOKEN:
+status_box.success("🤖 Buscando novas mensagens no Telegram de forma contínua...")
+
+# Executa o monitoramento se o token purificado estiver correto
+if TELEGRAM_TOKEN and not TELEGRAM_TOKEN.startswith("telegram.org"):
+    url_updates = f"https://telegram.org{TELEGRAM_TOKEN}/getUpdates"
     try:
-        url_updates = f"https://telegram.org{TOKEN}/getUpdates"
         response = requests.get(url_updates, params={"offset": st.session_state["last_id"] + 1, "timeout": 1}, timeout=3)
         if response.status_code == 200:
-            for update in response.json().get("result", []):
+            updates = response.json().get("result", [])
+            for update in updates:
                 st.session_state["last_id"] = update["update_id"]
                 if "message" in update and "text" in update["message"]:
                     chat_id = update["message"]["chat"]["id"]
-                    msg_txt = update["message"]["text"]
+                    texto_usuario = update["message"]["text"]
                     
-                    st.info(f"📥 Recebido: '{msg_txt}'")
-                    resposta = inteligenca_gemini(msg_txt)
+                    error_box.info(f"📥 Mensagem recebida! Processando...")
                     
-                    url_envio = f"https://telegram.org{TOKEN}/sendMessage"
-                    requests.post(url_envio, json={"chat_id": chat_id, "text": resposta}, timeout=5)
-                    st.success("📤 Respondido com sucesso!")
+                    resposta_final = gerar_resposta_gemini(texto_usuario)
+                    status_envio = enviar_mensagem_telegram(chat_id, resposta_final)
+                    
+                    if status_envio == 200:
+                        error_box.success(f"📤 Resposta enviada com sucesso ao Telegram!")
+                    else:
+                        error_box.error(f"❌ Falha ao enviar ao Telegram. Código: {status_envio}")
+        else:
+            error_box.error(f"⚠️ Erro na comunicação com o Telegram: Código {response.status_code}")
     except Exception as e:
-        st.error(f"Erro: {str(e)}")
+        error_box.error(f"💥 Erro no loop de execução: {str(e)}")
+else:
+    error_box.error("❌ Nenhum token válido foi carregado no sistema.")
 
 time.sleep(2)
 st.rerun()
