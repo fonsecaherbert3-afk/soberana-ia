@@ -34,6 +34,7 @@ API_KEY_GEMINI = st.secrets.get("GEMINI_API_KEY", "")
 
 
 
+
 # Inicialização da Inteligência Artificial com acesso à Internet e Diretrizes de Controle Blindadas
 if GEMINI_DISPONIVEL and API_KEY_GEMINI:
     genai.configure(api_key=API_KEY_GEMINI)
