@@ -51,8 +51,7 @@ if GEMINI_DISPONIVEL and API_KEY_GEMINI:
 model = modelo_ia = genai.GenerativeModel(
         model_name='gemini-1.5-flash-latest',
         system_instruction=config_sistema
-    )
-else:
+    ) else:
     model = modelo_ia = None
 
 # Funções de Gerenciamento de Memória de Longo Prazo
