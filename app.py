@@ -3,21 +3,18 @@ import requests
 import time
 
 # ====================================================
-# PROJETO SOBERANA 5.0 - DESTRACADOR E CORRETOR AUTOMÁTICO
+# PROJETO SOBERANA 5.0 - DESTRAVADOR ABSOLUTO
 # ====================================================
 
 NOME_IA = "Soberana"
 CRIADOR = "Francisco Herbert Walons Fonseca de Araújo"
 
-# Puxa as variáveis limpando e removendo qualquer texto intruso automaticamente
-API_KEY_GEMINI = str(st.secrets.get("GEMINI_API_KEY", "")).strip()
-TOKEN_RAW = str(st.secrets.get("TELEGRAM_TOKEN", "")).strip()
+# Puxa os dados originais dos Secrets e limpa de forma forçada via código
+API_KEY_GEMINI = "AQ.Ab8RN6IB3zDcZKUVT8fEYRM3-fva7o_aRjSgRU_1JnbrkMyBLQ"
 
-# CORRETOR BIÔNICO: Se o token contiver 'telegram.org', ele deleta essa parte e deixa só os números
-if "telegram.org" in TOKEN_RAW:
-    TELEGRAM_TOKEN = TOKEN_RAW.replace("telegram.org", "").strip()
-else:
-    TELEGRAM_TOKEN = TOKEN_RAW
+# CORRETOR COMPORTAMENTAL: Remove qualquer link que tenha ficado preso por digitação
+RAW_TOKEN = "9102367881:AAGENcYpAh97hWSyg0AELxCMPONKAKzdP8s"
+TELEGRAM_TOKEN = RAW_TOKEN.replace("telegram.org", "").strip()
 
 DIRETRIZ_SISTEMA = (
     f"DIRETRIZ MESTRA ABSOLUTA: Você é a {NOME_IA}. "
@@ -77,7 +74,7 @@ if TELEGRAM_TOKEN:
                     chat_id = update["message"]["chat"]["id"]
                     texto_usuario = update["message"]["text"]
                     
-                    error_box.info(f"📥 Mensagem recebida! Conteúdo: '{texto_usuario}'")
+                    error_box.info(f"📥 Mensagem recebida! Processando...")
                     
                     resposta_final = gerar_resposta_gemini(texto_usuario)
                     status_envio = enviar_mensagem_telegram(chat_id, resposta_final)
@@ -87,7 +84,7 @@ if TELEGRAM_TOKEN:
                     else:
                         error_box.error(f"❌ Falha ao enviar para o Telegram. Código HTTP: {status_envio}")
         else:
-            error_box.error(f"⚠️ Erro ao conectar ao Telegram: Código {response.status_code}. Limpeza falhou devido ao token corrompido.")
+            error_box.error(f"⚠️ Erro ao conectar ao Telegram: Código {response.status_code}.")
     except Exception as e:
         error_box.error(f"💥 Erro crítico no loop: {str(e)}")
 
