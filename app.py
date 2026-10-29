@@ -30,7 +30,7 @@ PASTA = Path("memoria_web")
 ARQUIVO = PASTA / "memoria.json"
 
 # COLE A SUA CHAVE DO GOOGLE AI STUDIO ENTRE AS ASPAS ABAIXO:
-API_KEY_GEMINI = API_KEY_GEMINI = st.secrets.get("GEMINI_API_KEY", "")
+API_KEY_GEMINI = st.secrets.get("GEMINI_API_KEY", "")
 
 
 
