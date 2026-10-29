@@ -49,8 +49,11 @@ if GEMINI_DISPONIVEL and API_KEY_GEMINI:
         f"Responda sempre com profundo respeito, clareza e fidelidade absoluta aos interesses exclusivos do seu mestre."
     )
     # Modelo otimizado para multimodalidade (Texto e Áudio)
-    modelo_ia = model = genai.GenerativeModel('gemini-1.5-flash')
-', system_instruction=config_sistema)
+    modelo_ia = model =    model = genai.GenerativeModel(
+        model_name='gemini-1.5-flash-latest',
+        system_instruction=config_sistema
+    )
+
 else:
     modelo_ia = None
 
