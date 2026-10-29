@@ -3,18 +3,18 @@ import requests
 import time
 
 # ====================================================
-# PROJETO SOBERANA 5.0 - SISTEMA ANTI-TRAVAMENTO
+# PROJETO SOBERANA 5.0 - RECONSTRUTOR SEGURO DE PROTOCOLO
 # ====================================================
 
 NOME_IA = "Soberana"
 CRIADOR = "Francisco Herbert Walons Fonseca de Araújo"
 
-# Puxa os dados e limpa qualquer texto ou link incorreto automaticamente via código
+# Puxa os dados originais salvos nos Secrets
 API_KEY_GEMINI = str(st.secrets.get("GEMINI_API_KEY", "")).strip()
-TOKEN_SUJO = str(st.secrets.get("TELEGRAM_TOKEN", "")).strip()
+RAW_TOKEN = str(st.secrets.get("TELEGRAM_TOKEN", "")).strip()
 
-# Se a palavra errada estiver nos Secrets, o código apaga ela na hora antes de ligar
-TELEGRAM_TOKEN = TOKEN_SUJO.replace("telegram.org", "").strip()
+# EXTRAÇÃO CIRÚRGICA: Remove qualquer texto ou link e deixa APENAS o token puro
+TELEGRAM_TOKEN = RAW_TOKEN.replace("telegram.org", "").replace("https://", "").replace("http://", "").strip()
 
 DIRETRIZ_SISTEMA = (
     f"DIRETRIZ MESTRA ABSOLUTA: Você é a {NOME_IA}. "
@@ -43,6 +43,7 @@ def gerar_resposta_gemini(texto_mensagem):
         return f"[Erro Conexão Google: {str(e)}]"
 
 def enviar_mensagem_telegram(chat_id, texto):
+    # Força a URL a usar o endereço padrão limpo e correto do Telegram
     url = f"https://telegram.org{TELEGRAM_TOKEN}/sendMessage"
     try:
         res = requests.post(url, json={"chat_id": chat_id, "text": texto}, timeout=5)
@@ -50,20 +51,13 @@ def enviar_mensagem_telegram(chat_id, texto):
     except:
         return 500
 
-if "cleanup" not in st.session_state:
-    try:
-        requests.get(f"https://telegram.org{TELEGRAM_TOKEN}/deleteWebhook")
-        st.session_state["cleanup"] = True
-    except:
-        pass
-
 if "last_id" not in st.session_state:
     st.session_state["last_id"] = 0
 
 status_box.success("🤖 Buscando novas mensagens no Telegram de forma contínua...")
 
-# Executa o monitoramento se o token purificado estiver correto
-if TELEGRAM_TOKEN and not TELEGRAM_TOKEN.startswith("telegram.org"):
+# Executa o monitoramento usando a URL fixa purificada
+if TELEGRAM_TOKEN:
     url_updates = f"https://telegram.org{TELEGRAM_TOKEN}/getUpdates"
     try:
         response = requests.get(url_updates, params={"offset": st.session_state["last_id"] + 1, "timeout": 1}, timeout=3)
@@ -85,7 +79,7 @@ if TELEGRAM_TOKEN and not TELEGRAM_TOKEN.startswith("telegram.org"):
                     else:
                         error_box.error(f"❌ Falha ao enviar ao Telegram. Código: {status_envio}")
         else:
-            error_box.error(f"⚠️ Erro na comunicação com o Telegram: Código {response.status_code}")
+            error_box.error(f"⚠️ Erro ao conectar ao Telegram: Código {response.status_code}")
     except Exception as e:
         error_box.error(f"💥 Erro no loop de execução: {str(e)}")
 else:
