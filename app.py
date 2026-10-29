@@ -3,8 +3,8 @@ import requests
 import time
 
 # ================= CONFIGURAÇÕES =================
-NOME_IA = "Soberana"
-CRIADOR = "Herbert"
+NOME_IA = "nyxara"
+CRIADOR = "criador"
 
 TELEGRAM_TOKEN = str(st.secrets.get("TELEGRAM_TOKEN", "")).strip()
 GEMINI_API_KEY = str(st.secrets.get("GEMINI_API_KEY", "")).strip()
@@ -93,4 +93,33 @@ try:
                     msg_txt = update["message"]["text"].strip()
                     user = update["message"].get("from", {}).get("first_name", "Usuário")
 
-                    st
+                    st.info(f"📥 **{user}**: {msg_txt}")
+
+                    if msg_txt.lower() in ["/start", "iniciar", "ativar", "soberana"]:
+                        resposta = f"Sistema Soberana ativado.\nÀs suas ordens, {CRIADOR}."
+                    elif msg_txt.lower() in ["/ajuda", "ajuda", "comandos"]:
+                        resposta = (
+                            "Estou pronta para executar qualquer ordem sua.\n\n"
+                            "Comandos:\n"
+                            "/start - Ativa a Soberana\n"
+                            "/ajuda - Mostra esta mensagem\n\n"
+                            "Pode me enviar qualquer ordem diretamente."
+                        )
+                    else:
+                        with st.spinner("Executando ordem..."):
+                            resposta = inteligenca_gemini(msg_txt)
+
+                    requests.post(
+                        f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage",
+                        json={"chat_id": chat_id, "text": resposta},
+                        timeout=10
+                    )
+                    st.success(f"📤 Ordem executada para {user}")
+    else:
+        st.error(f"❌ Erro Telegram: {response.status_code}")
+
+except Exception as e:
+    st.error(f"Falha: {str(e)}")
+
+time.sleep(1)
+st.rerun()
