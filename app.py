@@ -23,14 +23,17 @@ if "chat" not in st.session_state: st.session_state.chat = []
 
 if not st.session_state.auth:
     st.title(f"🔒 {NOME.upper()} - Restrito")
-    if st.button("Autenticar") if hashlib.sha256(st.text_input("Senha:", type="password").encode()).hexdigest() == HASH_SENHA else False:
-        st.session_state.auth = True; st.rerun()
+    senha = st.text_input("Senha:", type="password")
+    if st.button("Autenticar"):
+        if hashlib.sha256(senha.encode()).hexdigest() == HASH_SENHA:
+            st.session_state.auth = True; st.rerun()
+        else: st.error("Acesso negado.")
 else:
     memoria = carregar()
     st.title(f"🧠 {NOME} 5.0")
     
     with st.sidebar:
-        st.write(f"**Mestre:** {CRIADOR}\n**Cérebro:** {'Online' if client else 'Offline'}")
+        st.write(f"**Mestre:** {CRIADOR}\n**Cérebro:** {'Online (3.8-Flash)' if client else 'Offline'}")
         if st.button("Sair"): st.session_state.auth = False; st.rerun()
         st.subheader("📌 Memória"); [st.info(a['texto']) for a in memoria["anotacoes"]]
 
@@ -63,7 +66,11 @@ else:
                     try:
                         hist = [types.Content(role="user" if m["r"]=="user" else "model", parts=[types.Part.from_text(text=m["t"])]) for m in st.session_state.chat[:-1]]
                         hist.append(types.Content(role="user", parts=[audio_part] if audio else [types.Part.from_text(text=user_in)]))
-                        resp = client.models.generate_content(model='gemini-2.5-flash', contents=hist, config=types.GenerateContentConfig(system_instruction=CONFIG_SISTEMA, temperature=0.3)).text
+                        resp = client.models.generate_content(
+                            model='gemini-3.8-flash', 
+                            contents=hist, 
+                            config=types.GenerateContentConfig(system_instruction=CONFIG_SISTEMA, temperature=0.3)
+                        ).text
                         p.markdown(resp)
                     except Exception as e: resp = f"❌ Erro Gemini: {e}"; p.write(resp)
             else: resp = "⚠️ Sistema offline. Verifique a API KEY."
