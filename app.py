@@ -3,15 +3,15 @@ import requests
 import time
 
 # ====================================================
-# PROJETO SOBERANA 5.0 - MONITOR TOTAL DE ERROS
+# PROJETO SOBERANA 5.0 - MOTOR DE CONEXÃO FIXA FIXADO
 # ====================================================
 
 NOME_IA = "Soberana"
 CRIADOR = "Francisco Herbert Walons Fonseca de Araújo"
 
-# Limpeza automática absoluta de strings
-API_KEY_GEMINI = str(st.secrets.get("GEMINI_API_KEY", "")).strip()
-TELEGRAM_TOKEN = str(st.secrets.get("TELEGRAM_TOKEN", "")).strip()
+# Chaves inseridas de forma direta e sem erros de leitura
+API_KEY_GEMINI = "AQ.Ab8RN6IB3zDcZKUVT8fEYRM3-fva7o_aRjSgRU_1JnbrkMyBLQ"
+TELEGRAM_TOKEN = "9102367881:AAGENcYpAh97hWSyg0AELxCMPONKAKzdP8s"
 
 DIRETRIZ_SISTEMA = (
     f"DIRETRIZ MESTRA ABSOLUTA: Você é a {NOME_IA}. "
@@ -21,7 +21,6 @@ DIRETRIZ_SISTEMA = (
 
 st.title(f"🧠 {NOME_IA.upper()} 5.0 - MONITOR")
 
-# Criando espaço para depuração na tela do Streamlit
 status_box = st.empty()
 error_box = st.empty()
 
@@ -48,7 +47,6 @@ def enviar_mensagem_telegram(chat_id, texto):
     except:
         return 500
 
-# Executa a limpeza preventiva de webhooks antigos
 if "cleanup" not in st.session_state:
     try:
         requests.get(f"https://telegram.org{TELEGRAM_TOKEN}/deleteWebhook")
@@ -61,7 +59,6 @@ if "last_id" not in st.session_state:
 
 status_box.success("🤖 Buscando novas mensagens no Telegram de forma contínua...")
 
-# Executa uma busca por novas mensagens
 if TELEGRAM_TOKEN:
     url_updates = f"https://telegram.org{TELEGRAM_TOKEN}/getUpdates"
     try:
@@ -74,21 +71,19 @@ if TELEGRAM_TOKEN:
                     chat_id = update["message"]["chat"]["id"]
                     texto_usuario = update["message"]["text"]
                     
-                    error_box.info(f"📥 Mensagem recebida de Francisco! Conteúdo: '{texto_usuario}'")
+                    error_box.info(f"📥 Mensagem recebida! Processando...")
                     
-                    # Gera resposta e envia
                     resposta_final = gerar_resposta_gemini(texto_usuario)
                     status_envio = enviar_mensagem_telegram(chat_id, resposta_final)
                     
                     if status_envio == 200:
-                        error_box.success(f"📤 Resposta enviada ao Telegram com sucesso!")
+                        error_box.success(f"📤 Resposta enviada com sucesso!")
                     else:
-                        error_box.error(f"❌ Falha ao enviar para o Telegram. Código HTTP: {status_envio}")
+                        error_box.error(f"❌ Falha ao enviar para o Telegram: {status_envio}")
         else:
-            error_box.error(f"⚠️ Erro ao conectar ao Telegram: Código {response.status_code}. Verifique o seu TOKEN nos Secrets.")
+            error_box.error(f"⚠️ Erro no Telegram: Código {response.status_code}")
     except Exception as e:
         error_box.error(f"💥 Erro crítico no loop: {str(e)}")
 
-# Força atualização a cada 2 segundos
 time.sleep(2)
 st.rerun()
