@@ -3,15 +3,15 @@ import requests
 import time
 
 # ====================================================
-# PROJETO SOBERANA 5.0 - BLINDAGEM E LIMPEZA DE CHAVES
+# PROJETO SOBERANA 5.0 - MOTOR COM LIMPEZA DE FORMATO
 # ====================================================
 
 NOME_IA = "Soberana"
 CRIADOR = "Francisco Herbert Walons Fonseca de Araújo"
 
-# Puxa os dados dos Secrets limpando automaticamente qualquer espaço ou quebra de linha do celular
-API_KEY_GEMINI = str(st.secrets.get("GEMINI_API_KEY", "")).strip().replace('"', '').replace("'", "")
-TELEGRAM_TOKEN = str(st.secrets.get("TELEGRAM_TOKEN", "")).strip().replace('"', '').replace("'", "")
+# Captura e remove cirurgicamente qualquer quebra de linha ou espaço invisível (.strip())
+API_KEY_GEMINI = str(st.secrets.get("GEMINI_API_KEY", "")).strip()
+TELEGRAM_TOKEN = str(st.secrets.get("TELEGRAM_TOKEN", "")).strip()
 
 DIRETRIZ_SISTEMA = (
     f"DIRETRIZ MESTRA ABSOLUTA: Você é a {NOME_IA}. "
@@ -20,7 +20,7 @@ DIRETRIZ_SISTEMA = (
 )
 
 def gerar_resposta_gemini(texto_mensagem):
-    """Conversa com a API do Gemini via HTTP estável"""
+    """Envia requisição direta tratando o erro de caractere invisível"""
     url = f"https://googleapis.com{API_KEY_GEMINI}"
     headers = {"Content-Type": "application/json"}
     payload = {
@@ -31,12 +31,13 @@ def gerar_resposta_gemini(texto_mensagem):
         response = requests.post(url, headers=headers, json=payload, timeout=10)
         if response.status_code == 200:
             return response.json()["candidates"]["content"]["parts"]["text"]
+        elif response.status_code == 400:
+            return "Erro 400: O Google rejeitou o formato da chave. Verifique se copiou a chave completa sem cortar letras."
         return f"Erro na API Google (Código {response.status_code})"
     except Exception as e:
         return f"Erro de conexão: {str(e)}"
 
 def enviar_mensagem_telegram(chat_id, texto):
-    """Envia o texto de volta para o Telegram"""
     url = f"https://telegram.org{TELEGRAM_TOKEN}/sendMessage"
     try:
         requests.post(url, json={"chat_id": chat_id, "text": texto}, timeout=5)
@@ -44,7 +45,6 @@ def enviar_mensagem_telegram(chat_id, texto):
         pass
 
 def processar_mensagens_telegram():
-    """Busca e responde as novas mensagens automaticamente"""
     if not TELEGRAM_TOKEN:
         return
         
@@ -62,24 +62,20 @@ def processar_mensagens_telegram():
                     chat_id = update["message"]["chat"]["id"]
                     texto_usuario = update["message"]["text"]
                     
-                    # Processa a resposta
+                    # Envio local de confirmação instantânea
+                    if texto_usuario.lower().strip() in ["/start", "oi", "olá"]:
+                        enviar_mensagem_telegram(chat_id, f"Olá, meu mestre {CRIADOR}! Comando recebido. Acionando conexão purificada com o Gemini...")
+                    
                     resposta_final = gerar_resposta_gemini(texto_usuario)
                     enviar_mensagem_telegram(chat_id, resposta_final)
     except:
         pass
 
-# Remove qualquer configuração residual de webhook para liberar o canal
-if "webhook_removido" not in st.session_state:
-    try:
-        requests.get(f"https://telegram.org{TELEGRAM_TOKEN}/deleteWebhook")
-        st.session_state["webhook_removido"] = True
-    except:
-        pass
-
+# Executa o limpador e ouvidor do Telegram
 processar_mensagens_telegram()
 
-st.title(f"🧠 {NOME_IA.upper()} 5.0 - ONLINE")
-st.success("O motor de limpeza processou as chaves com sucesso. Pronto para receber mensagens.")
+st.title(f"🧠 {NOME_IA.upper()} 5.0 - MONITORAMENTO")
+st.success("Filtro de cabeçalho ativado. Monitorando novas mensagens no Telegram...")
 
 time.sleep(2)
 st.rerun()
