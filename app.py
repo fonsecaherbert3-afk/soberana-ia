@@ -30,7 +30,8 @@ PASTA = Path("memoria_web")
 ARQUIVO = PASTA / "memoria.json"
 
 # COLE A SUA CHAVE DO GOOGLE AI STUDIO ENTRE AS ASPAS ABAIXO:
-API_KEY_GEMINI = 'AQ.Ab8RN6JCDRHV1bZWMAH0SUt500hiNh2v-4gaD3WR2TCNYR8jLA'
+API_KEY_GEMINI = 'API_KEY_GEMINI = st.secrets.get("GEMINI_API_KEY", "")
+
 
 # Inicialização da Inteligência Artificial com acesso à Internet e Diretrizes de Controle Blindadas
 if GEMINI_DISPONIVEL and API_KEY_GEMINI:
