@@ -1,5 +1,16 @@
 
 import streamlit as st
+
+# ==================================================
+# 1. CONFIGURAÇÃO INICIAL
+# ==================================================
+
+st.set_page_config(
+    page_title="Soberana 5.0 - Nyxara",
+    page_icon="🧠",
+    layout="centered"
+)
+
 import requests
 import tempfile
 import os
@@ -7,18 +18,19 @@ import json
 import ast
 import re
 import io
-from pathlib import Path
-from datetime import datetime
+
 from gtts import gTTS
 from streamlit_autorefresh import st_autorefresh
 
+
 # ==================================================
-# 1. CONFIGURAÇÕES
+# 2. CONFIGURAÇÕES E SECRETS
 # ==================================================
 
 NOME_IA = "Nyxara"
 CRIADOR = "Senhor Herbert"
-MODELO_GEMINI = "gemini-3.5-flash-lite"
+
+MODELO_GEMINI = "gemini-3.8-flash"
 
 TELEGRAM_TOKEN = str(
     st.secrets.get("TELEGRAM_TOKEN", "")
@@ -36,17 +48,34 @@ TELEGRAM_API = (
     f"https://api.telegram.org/bot{TELEGRAM_TOKEN}"
 )
 
-st.set_page_config(
-    page_title="Soberana 5.0 - Nyxara",
-    page_icon="🧠",
-    layout="centered"
-)
+
+# ==================================================
+# 3. INTERFACE
+# ==================================================
 
 st.title("🧠 SOBERANA 5.0")
 st.subheader("Núcleo de desenvolvimento supervisionado")
 
+
 # ==================================================
-# 2. ESTADO DO SISTEMA
+# 4. VERIFICAÇÃO DAS CONFIGURAÇÕES
+# ==================================================
+
+if not TELEGRAM_TOKEN:
+    st.error("Configure TELEGRAM_TOKEN nos Secrets.")
+    st.stop()
+
+if not GEMINI_API_KEY:
+    st.error("Configure GEMINI_API_KEY nos Secrets.")
+    st.stop()
+
+if not AUTHORIZED_CHAT_ID:
+    st.error("Configure AUTHORIZED_CHAT_ID nos Secrets.")
+    st.stop()
+
+
+# ==================================================
+# 5. ESTADO DO SISTEMA
 # ==================================================
 
 if "last_id" not in st.session_state:
@@ -61,8 +90,12 @@ if "ultimo_status" not in st.session_state:
 if "historico" not in st.session_state:
     st.session_state.historico = []
 
+if "webhook_verificado" not in st.session_state:
+    st.session_state.webhook_verificado = False
+
+
 # ==================================================
-# 3. PERSONALIDADE DA NYXARA
+# 6. PERSONALIDADE DA NYXARA
 # ==================================================
 
 SYSTEM_PROMPT = f"""
@@ -72,6 +105,7 @@ de {CRIADOR}.
 Seu idioma é português brasileiro.
 
 Você deve:
+
 - Ser inteligente, objetiva e respeitosa.
 - Ajudar no desenvolvimento do Projeto Soberana.
 - Explicar suas decisões.
@@ -79,12 +113,14 @@ Você deve:
 - Não afirmar que executou algo que não executou.
 - Proteger dados e credenciais.
 - Pedir autorização para operações importantes.
+- Explicar assuntos técnicos de maneira simples.
 
 Você está funcionando em modo supervisionado.
 """
 
+
 # ==================================================
-# 4. COMUNICAÇÃO COM GEMINI
+# 7. COMUNICAÇÃO COM GEMINI
 # ==================================================
 
 def consultar_gemini(texto, instrucao=None):
@@ -114,11 +150,12 @@ def consultar_gemini(texto, instrucao=None):
         ],
         "generationConfig": {
             "temperature": 0.3,
-            "maxOutputTokens": 12000
+            "maxOutputTokens": 6000
         }
     }
 
     try:
+
         resposta = requests.post(
             url,
             headers={
@@ -130,8 +167,7 @@ def consultar_gemini(texto, instrucao=None):
 
         if resposta.status_code != 200:
             return (
-                f"Erro Gemini HTTP "
-                f"{resposta.status_code}: "
+                f"Erro Gemini HTTP {resposta.status_code}: "
                 f"{resposta.text[:500]}"
             )
 
@@ -165,7 +201,7 @@ def inteligencia_gemini(texto):
 
 
 # ==================================================
-# 5. NÚCLEO DE DESENVOLVIMENTO
+# 8. NÚCLEO DE DESENVOLVIMENTO
 # ==================================================
 
 INSTRUCAO_DESENVOLVEDORA = """
@@ -180,7 +216,7 @@ REGRAS OBRIGATÓRIAS:
 2. Não modifique app.py.
 3. Não solicite nem inclua tokens, senhas ou chaves.
 4. Não gere códigos para roubar credenciais.
-5. Não gere malware, invasão ou acesso não autorizado.
+5. Não gere malware ou invasão.
 6. Não execute comandos no sistema operacional.
 7. Não tente modificar arquivos fora do módulo solicitado.
 8. O código deve ser organizado e documentado.
@@ -208,6 +244,7 @@ def gerar_proposta(pedido):
     )
 
     try:
+
         inicio = resultado.find("{")
         fim = resultado.rfind("}") + 1
 
@@ -244,7 +281,7 @@ def gerar_proposta(pedido):
         if len(codigo) > 30000:
             raise ValueError("Código excede o limite.")
 
-        # Verifica sintaxe sem executar o código.
+        # Verifica a sintaxe sem executar o código.
         ast.parse(codigo)
 
         proposta_validada = {
@@ -260,7 +297,7 @@ def gerar_proposta(pedido):
 
 
 # ==================================================
-# 6. ENVIO DE TEXTO PELO TELEGRAM
+# 9. ENVIO DE TEXTO PELO TELEGRAM
 # ==================================================
 
 def enviar_texto(chat_id, texto):
@@ -285,7 +322,7 @@ def enviar_texto(chat_id, texto):
 
 
 # ==================================================
-# 7. ENVIO DE ARQUIVO PYTHON
+# 10. ENVIO DE ARQUIVO PYTHON
 # ==================================================
 
 def enviar_modulo(chat_id, proposta):
@@ -329,7 +366,7 @@ def enviar_modulo(chat_id, proposta):
 
 
 # ==================================================
-# 8. SISTEMA DE VOZ
+# 11. SISTEMA DE VOZ
 # ==================================================
 
 def enviar_voz(chat_id, texto):
@@ -337,6 +374,7 @@ def enviar_voz(chat_id, texto):
     caminho = None
 
     try:
+
         with tempfile.NamedTemporaryFile(
             suffix=".mp3",
             delete=False
@@ -344,8 +382,8 @@ def enviar_voz(chat_id, texto):
             caminho = arquivo.name
 
         gTTS(
-            text=texto[:3000],
-            lang="pt-br"
+            text=str(texto)[:2500],
+            lang="pt"
         ).save(caminho)
 
         with open(caminho, "rb") as audio:
@@ -367,12 +405,15 @@ def enviar_voz(chat_id, texto):
 
         resposta.raise_for_status()
 
-        return resposta.json().get("ok", False)
+        dados = resposta.json()
+
+        return dados.get("ok", False)
 
     except Exception:
         return False
 
     finally:
+
         if caminho and os.path.exists(caminho):
             try:
                 os.remove(caminho)
@@ -381,7 +422,7 @@ def enviar_voz(chat_id, texto):
 
 
 # ==================================================
-# 9. COMANDOS
+# 12. COMANDOS
 # ==================================================
 
 def processar_comando(chat_id, mensagem):
@@ -425,16 +466,11 @@ def processar_comando(chat_id, mensagem):
 
         return (
             "NYXARA - STATUS\n\n"
-            "Inteligência: "
-            + (
-                "Configurada"
-                if GEMINI_API_KEY
-                else "Sem chave"
-            )
-            + "\nModo: Supervisionado\n"
-            + "Execução automática de código: Desativada\n"
-            + "Alteração automática de app.py: Bloqueada\n"
-            + "Proposta pendente: "
+            "Inteligência: Configurada\n"
+            "Modo: Supervisionado\n"
+            "Execução automática de código: Desativada\n"
+            "Alteração automática de app.py: Bloqueada\n"
+            "Proposta pendente: "
             + (
                 "Sim"
                 if st.session_state.proposta_pendente
@@ -454,9 +490,6 @@ def processar_comando(chat_id, mensagem):
                 "/desenvolver criar um módulo de memória"
             )
 
-        if not GEMINI_API_KEY:
-            return "Configure a chave Gemini primeiro."
-
         proposta, erro = gerar_proposta(pedido)
 
         if erro:
@@ -474,9 +507,8 @@ def processar_comando(chat_id, mensagem):
             f"Resumo: {proposta['resumo']}\n\n"
             "O código passou pela verificação de sintaxe.\n"
             "Ainda não foi executado nem instalado.\n\n"
-            "Revise a proposta e envie:\n"
-            "/aprovar para receber o arquivo.\n"
-            "/rejeitar para descartar."
+            "Envie /aprovar para receber o arquivo.\n"
+            "Envie /rejeitar para descartar."
         )
 
     # CONSULTAR PROPOSTA
@@ -503,7 +535,7 @@ def processar_comando(chat_id, mensagem):
             return "Não existe proposta para aprovar."
 
         try:
-            # Revalidação antes de entregar.
+
             ast.parse(proposta["codigo"])
 
             enviar_modulo(chat_id, proposta)
@@ -513,8 +545,7 @@ def processar_comando(chat_id, mensagem):
             return (
                 "MÓDULO APROVADO E ENTREGUE!\n\n"
                 f"Arquivo: {proposta['arquivo']}\n\n"
-                "O arquivo foi enviado como documento "
-                "Python no Telegram.\n"
+                "O arquivo foi enviado como documento Python.\n"
                 "Ele ainda precisa ser revisado e "
                 "adicionado ao projeto manualmente."
             )
@@ -541,7 +572,7 @@ def processar_comando(chat_id, mensagem):
 
 
 # ==================================================
-# 10. SEGURANÇA E AUTORIZAÇÃO
+# 13. SEGURANÇA E AUTORIZAÇÃO
 # ==================================================
 
 def usuario_autorizado(chat_id):
@@ -553,38 +584,69 @@ def usuario_autorizado(chat_id):
 
 
 # ==================================================
-# 11. CONFIGURAÇÃO VISUAL
+# 14. PREPARAR TELEGRAM
+# ==================================================
+
+if not st.session_state.webhook_verificado:
+
+    try:
+
+        resposta_webhook = requests.post(
+            f"{TELEGRAM_API}/deleteWebhook",
+            json={
+                "drop_pending_updates": False
+            },
+            timeout=20
+        )
+
+        resposta_webhook.raise_for_status()
+
+        dados_webhook = resposta_webhook.json()
+
+        if not dados_webhook.get("ok"):
+            st.error(
+                "Não foi possível preparar o Telegram: "
+                + dados_webhook.get(
+                    "description",
+                    "Erro desconhecido."
+                )
+            )
+            st.stop()
+
+        st.session_state.webhook_verificado = True
+
+    except requests.RequestException as erro:
+
+        st.error(
+            f"Falha ao preparar o Telegram: {erro}"
+        )
+        st.stop()
+
+
+# ==================================================
+# 15. PAINEL DE CONTROLE
 # ==================================================
 
 st.divider()
 
 st.markdown("### Painel de controle")
 
-if not TELEGRAM_TOKEN:
-    st.error("Configure TELEGRAM_TOKEN nos Secrets.")
-    st.stop()
-
-if not GEMINI_API_KEY:
-    st.warning("GEMINI_API_KEY não configurada.")
-
-if not AUTHORIZED_CHAT_ID:
-    st.error(
-        "Configure AUTHORIZED_CHAT_ID nos Secrets. "
-        "Somente seu chat autorizado poderá controlar a IA."
-    )
-    st.stop()
-
 st.success("Sistema configurado.")
 st.info("Modo de desenvolvimento: supervisionado.")
 
-# Atualização automática da página.
+st.caption(
+    "A Nyxara está aguardando mensagens autorizadas."
+)
+
+# Atualização da página.
 st_autorefresh(
     interval=4000,
     key="nyxara_refresh"
 )
 
+
 # ==================================================
-# 12. RECEBER MENSAGENS DO TELEGRAM
+# 16. RECEBER MENSAGENS DO TELEGRAM
 # ==================================================
 
 try:
@@ -605,14 +667,19 @@ try:
 
     if not dados.get("ok"):
         raise RuntimeError(
-            "Telegram não confirmou a consulta."
+            dados.get(
+                "description",
+                "Telegram não confirmou a consulta."
+            )
         )
 
     atualizacoes = dados.get("result", [])
 
     for update in atualizacoes:
 
-        st.session_state.last_id = update["update_id"]
+        st.session_state.last_id = (
+            update["update_id"]
+        )
 
         mensagem = update.get("message", {})
         chat = mensagem.get("chat", {})
@@ -626,35 +693,36 @@ try:
         if not chat_id or not texto_recebido:
             continue
 
-        # Bloqueia usuários não autorizados.
+        # Verificação de autorização.
         if not usuario_autorizado(chat_id):
             continue
 
-        # Processa comandos.
+        # Processamento dos comandos.
         resposta_bot = processar_comando(
             chat_id,
             texto_recebido
         )
 
-        # Se não for comando, conversa com Gemini.
+        # Conversa normal com Gemini.
         if resposta_bot is None:
 
             resposta_bot = inteligencia_gemini(
                 texto_recebido
             )
 
+        # Envia resposta de texto.
         enviar_texto(
             chat_id,
             resposta_bot
         )
 
-        # Voz somente para respostas textuais.
-        if not texto_recebido.lower().startswith(
-            "/desenvolver"
-        ) and texto_recebido.lower() not in [
+        # Envia áudio, exceto para comandos de arquivo.
+        if texto_recebido.lower() not in [
             "/aprovar",
             "/rejeitar"
-        ]:
+        ] and not texto_recebido.lower().startswith(
+            "/desenvolver"
+        ):
 
             enviar_voz(
                 chat_id,
@@ -671,8 +739,8 @@ try:
 
 except requests.RequestException as erro:
 
-    st.warning(
-        f"Falha de comunicação: {erro}"
+    st.error(
+        f"Falha de comunicação com o Telegram: {erro}"
     )
 
 except Exception as erro:
@@ -683,7 +751,7 @@ except Exception as erro:
 
 
 # ==================================================
-# 13. PAINEL DE PROPOSTAS
+# 17. PAINEL DE PROPOSTAS
 # ==================================================
 
 st.divider()
@@ -694,13 +762,22 @@ proposta = st.session_state.proposta_pendente
 
 if proposta:
 
-    st.warning("Existe uma proposta aguardando aprovação.")
+    st.warning(
+        "Existe uma proposta aguardando aprovação."
+    )
 
-    st.write("**Arquivo:**", proposta["arquivo"])
+    st.write(
+        "**Arquivo:**",
+        proposta["arquivo"]
+    )
 
-    st.write("**Resumo:**", proposta["resumo"])
+    st.write(
+        "**Resumo:**",
+        proposta["resumo"]
+    )
 
     with st.expander("Visualizar código proposto"):
+
         st.code(
             proposta["codigo"],
             language="python"
@@ -712,11 +789,13 @@ if proposta:
 
 else:
 
-    st.info("Nenhuma proposta aguardando aprovação.")
+    st.info(
+        "Nenhuma proposta aguardando aprovação."
+    )
 
 st.divider()
 
-st.caption(
-    "SOBERANA 5.0 | NYXARA | "
-    "Desenvolvimento supervisionado"
+st.write(
+    "**Estado:**",
+    st.session_state.ultimo_status
 )
