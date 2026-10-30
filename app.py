@@ -18,6 +18,7 @@ import json
 import ast
 import re
 import io
+import time
 
 from gtts import gTTS
 from streamlit_autorefresh import st_autorefresh
@@ -154,46 +155,110 @@ def consultar_gemini(texto, instrucao=None):
         }
     }
 
-    try:
+    # Até quatro tentativas para erros temporários.
+    for tentativa in range(4):
 
-        resposta = requests.post(
-            url,
-            headers={
-                "x-goog-api-key": GEMINI_API_KEY
-            },
-            json=payload,
-            timeout=90
-        )
+        try:
 
-        if resposta.status_code != 200:
+            resposta = requests.post(
+                url,
+                headers={
+                    "x-goog-api-key": GEMINI_API_KEY
+                },
+                json=payload,
+                timeout=(15, 120)
+            )
+
+            # Resposta bem-sucedida.
+            if resposta.status_code == 200:
+
+                dados = resposta.json()
+
+                candidatos = dados.get(
+                    "candidates", []
+                )
+
+                if not candidatos:
+                    return (
+                        "O Gemini não retornou uma resposta."
+                    )
+
+                partes = candidatos[0].get(
+                    "content", {}
+                ).get("parts", [])
+
+                resultado = "".join(
+                    parte.get("text", "")
+                    for parte in partes
+                ).strip()
+
+                return (
+                    resultado
+                    or "Resposta vazia do Gemini."
+                )
+
+            # Erros que podem ser temporários.
+            if resposta.status_code in (
+                429, 500, 502, 503, 504
+            ):
+
+                if tentativa < 3:
+
+                    espera = 2 ** (tentativa + 1)
+
+                    time.sleep(espera)
+
+                    continue
+
+            # Erro não recuperável ou tentativas esgotadas.
             return (
                 f"Erro Gemini HTTP {resposta.status_code}: "
                 f"{resposta.text[:500]}"
             )
 
-        dados = resposta.json()
+        except requests.Timeout:
 
-        candidatos = dados.get("candidates", [])
+            if tentativa < 3:
 
-        if not candidatos:
-            return "O Gemini não retornou uma resposta."
+                espera = 2 ** (tentativa + 1)
 
-        partes = candidatos[0].get(
-            "content", {}
-        ).get("parts", [])
+                time.sleep(espera)
 
-        resultado = "".join(
-            parte.get("text", "")
-            for parte in partes
-        ).strip()
+                continue
 
-        return resultado or "Resposta vazia do Gemini."
+            return (
+                "O Gemini demorou demais para responder. "
+                "Tente novamente em alguns instantes."
+            )
 
-    except requests.RequestException as erro:
-        return f"Falha na conexão Gemini: {erro}"
+        except requests.RequestException as erro:
 
-    except (ValueError, KeyError, TypeError) as erro:
-        return f"Erro ao interpretar Gemini: {erro}"
+            if tentativa < 3:
+
+                espera = 2 ** (tentativa + 1)
+
+                time.sleep(espera)
+
+                continue
+
+            return (
+                f"Falha na conexão Gemini: {erro}"
+            )
+
+        except (
+            ValueError,
+            KeyError,
+            TypeError
+        ) as erro:
+
+            return (
+                f"Erro ao interpretar Gemini: {erro}"
+            )
+
+    return (
+        "O Gemini está temporariamente indisponível. "
+        "Tente novamente."
+    )
 
 
 def inteligencia_gemini(texto):
@@ -292,7 +357,12 @@ def gerar_proposta(pedido):
 
         return proposta_validada, None
 
-    except (ValueError, TypeError, SyntaxError) as erro:
+    except (
+        ValueError,
+        TypeError,
+        SyntaxError
+    ) as erro:
+
         return None, str(erro)
 
 
@@ -415,8 +485,10 @@ def enviar_voz(chat_id, texto):
     finally:
 
         if caminho and os.path.exists(caminho):
+
             try:
                 os.remove(caminho)
+
             except OSError:
                 pass
 
@@ -481,9 +553,12 @@ def processar_comando(chat_id, mensagem):
     # DESENVOLVER
     if comando_lower.startswith("/desenvolver"):
 
-        pedido = comando[len("/desenvolver"):].strip()
+        pedido = comando[
+            len("/desenvolver"):
+        ].strip()
 
         if not pedido:
+
             return (
                 "Informe o que deseja desenvolver.\n\n"
                 "Exemplo:\n"
@@ -493,6 +568,7 @@ def processar_comando(chat_id, mensagem):
         proposta, erro = gerar_proposta(pedido)
 
         if erro:
+
             return (
                 "Não consegui preparar o módulo.\n"
                 f"Motivo: {erro}\n"
@@ -604,6 +680,7 @@ if not st.session_state.webhook_verificado:
         dados_webhook = resposta_webhook.json()
 
         if not dados_webhook.get("ok"):
+
             st.error(
                 "Não foi possível preparar o Telegram: "
                 + dados_webhook.get(
@@ -611,6 +688,7 @@ if not st.session_state.webhook_verificado:
                     "Erro desconhecido."
                 )
             )
+
             st.stop()
 
         st.session_state.webhook_verificado = True
@@ -620,6 +698,7 @@ if not st.session_state.webhook_verificado:
         st.error(
             f"Falha ao preparar o Telegram: {erro}"
         )
+
         st.stop()
 
 
@@ -638,7 +717,6 @@ st.caption(
     "A Nyxara está aguardando mensagens autorizadas."
 )
 
-# Atualização da página.
 st_autorefresh(
     interval=4000,
     key="nyxara_refresh"
@@ -666,6 +744,7 @@ try:
     dados = resposta.json()
 
     if not dados.get("ok"):
+
         raise RuntimeError(
             dados.get(
                 "description",
